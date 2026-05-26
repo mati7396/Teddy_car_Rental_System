@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                   Int               @id @default(autoincrement())
+  email                String            @unique
+  password             String
+  passwordResetCode    String?
+  passwordResetExpires DateTime?
+  role                 Role              @default(CUSTOMER)
+  isActive             Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  auditLogs            AuditLog[]
+  managedBookings      Booking[]         @relation("EmployeeBookings")
+  bookings             Booking[]
+  customerProfile      CustomerProfile?
+  bankAccount          BankAccount?
+  bankTransactions     BankTransaction[]
+  notifications        Notification[]
+}
+
+model CustomerProfile {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @unique
+  firstName        String
+  lastName         String
+  phoneNumber      String
+  address          String?
+  driverLicenseUrl String?
+  idCardUrl        String?
+  profilePhotoUrl  String?
+  dateOfBirth      DateTime?
+  gender           String?
+  agreementSigned  Boolean   @default(false)
+  user             User      @relation(fields: [userId], references: [id])
+}
+
+model Car {
+  id           Int           @id @default(autoincrement())
+  make         String
+  model        String
+  year         Int
+  plateNumber  String        @unique
+  category     String
+  imageUrl     String?
+  dailyRate    Decimal
+  status       CarStatus     @default(AVAILABLE)
+  features     String[]
+  location     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bookings     Booking[]
+  maintenances Maintenance[]
+}
+
+model Booking {
+  id               Int               @id @default(autoincrement())
+  userId           Int
+  carId            Int?
+  packageId        Int?
+  startDate        DateTime
+  endDate          DateTime
+  actualReturnDate DateTime?
+  totalAmount      Decimal
+  penaltyAmount    Decimal?
+  status           BookingStatus     @default(PENDING)
+  idCardUrl        String?
+  driverLicenseUrl String?
+  processedById    Int?
+  assignedDriver   String?
+  driverPhone      String?
+  pickupLocation   String?
+  returnLocation   String?
+  isDelivery       Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  car              Car?              @relation(fields: [carId], references: [id])
+  package          Package?          @relation(fields: [packageId], references: [id])
+  processedBy      User?             @relation("EmployeeBookings", fields: [processedById], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
+  payment          Payment?
+  rentalAgreement  RentalAgreement?
+  bankTransactions BankTransaction[]
+  delivery         Delivery?
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  bookingId       Int      @unique
+  amount          Decimal
+  method          String
+  transactionId   String?
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  payerIdentifier String?
+  booking         Booking  @relation(fields: [bookingId], references: [id])
+}
+
+model BankAccount {
+  id            Int               @id @default(autoincrement())
+  userId        Int?              @unique
+  accountNumber String            @unique
+  balance       Decimal           @default(0)
+  accountType   String            @default("CUSTOMER")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User?             @relation(fields: [userId], references: [id])
+  transactions  BankTransaction[]
+}
+
+model BankTransaction {
+  id           Int         @id @default(autoincrement())
+  accountId    Int
+  userId       Int
+  bookingId    Int?
+  type         String
+  status       String      @default("SUCCESS")
+  amount       Decimal
+  balanceAfter Decimal
+  description  String?
+  counterparty String?
+  createdAt    DateTime    @default(now())
+  account      BankAccount @relation(fields: [accountId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
+  booking      Booking?    @relation(fields: [bookingId], references: [id])
+}
+
+model Notification {
+  id            Int      @id @default(autoincrement())
+  userId        Int?
+  recipientRole Role?
+  message       String
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id])
+}
+
+model RentalAgreement {
+  id            Int       @id @default(autoincrement())
+  bookingId     Int       @unique
+  agreementUrl  String?
+  signedAt      DateTime?
+  termsAccepted Boolean   @default(false)
+  booking       Booking   @relation(fields: [bookingId], references: [id])
+}
+
+model Maintenance {
+  id          Int       @id @default(autoincrement())
+  carId       Int
+  description String
+  cost        Decimal?
+  startDate   DateTime
+  endDate     DateTime?
+  status      String
+  car         Car       @relation(fields: [carId], references: [id])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  details   String?
+  timestamp DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model Package {
+  id        Int       @id @default(autoincrement())
+  name      String
+  price     Decimal
+  period    String
+  features  String[]
+  category  String
+  isActive  Boolean   @default(true)
+  language  String    @default("en")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+}
+
+model HomeContent {
+  id          Int     @id @default(autoincrement())
+  section     String
+  title       String?
+  description String
+  icon        String?
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+  language    String  @default("en")
+}
+
+enum Role {
+  CUSTOMER
+  EMPLOYEE
+  ADMIN
+  DRIVER
+}
+
+enum CarStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  UNAVAILABLE
+}
+
+enum BookingStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  PAID
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum DeliveryStatus {
+  ASSIGNED
+  ACCEPTED
+  ON_THE_WAY
+  DELIVERED
+}
+
+model Driver {
+  id                Int      @id @default(autoincrement())
+  fullName          String
+  email             String   @unique
+  password          String
+  phone             String
+  licenseNumber     String?
+  profilePictureUrl String?
+  status            String   @default("AVAILABLE")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deliveries        Delivery[]
+}
+
+model Delivery {
+  id               Int            @id @default(autoincrement())
+  bookingId        Int            @unique
+  driverId         Int
+  deliveryLocation String
+  status           DeliveryStatus @default(ASSIGNED)
+  deliveredAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  booking          Booking        @relation(fields: [bookingId], references: [id])
+  driver           Driver         @relation(fields: [driverId], references: [id])
+}
