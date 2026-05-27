@@ -25,7 +25,6 @@ import { useState, useEffect } from 'react';
 import PaymentDetailModal from '@/components/PaymentDetailModal';
 import { api } from '@/api';
 import { useAuth } from '@/context/AuthContext';
-import SimulationControl from './SimulationControl';
 
 const AdminLayout = ({ children }) => {
     const navigate = useNavigate();
@@ -102,6 +101,7 @@ const AdminLayout = ({ children }) => {
     const navItems = [
         { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/admin/tracking', icon: Navigation, label: 'Live Tracking' },
+        { path: '/admin/customers', icon: Users, label: 'Customers' },
         { path: '/admin/cars', icon: Car, label: 'Fleet Management' },
         { path: '/admin/employees', icon: Users, label: 'Employee Management' },
         { path: '/admin/drivers', icon: Navigation, label: 'Driver Management' },
@@ -234,8 +234,7 @@ const AdminLayout = ({ children }) => {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        {/* Simulation control */}
-                        <SimulationControl />
+                        {/* Simulation control removed from header */}
                         {/* Theme Toggle */}
                         <ThemeToggle />
 

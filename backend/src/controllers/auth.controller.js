@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
 const { sendPasswordResetEmail } = require('../utils/email');
-const DEFAULT_OPENING_BALANCE = Number(process.env.LOCAL_BANK_OPENING_BALANCE || 10000);
+const DEFAULT_OPENING_BALANCE = Number(process.env.LOCAL_BANK_OPENING_BALANCE || 20000);
 const generateAccountNumber = (userId) => `LBA-${String(userId).padStart(10, '0')}`;
 
 const register = async (req, res) => {

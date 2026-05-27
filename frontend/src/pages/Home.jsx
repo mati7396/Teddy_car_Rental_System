@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { isAuthenticated, user } = useAuth();
     const [cars, setCars] = useState([]);
@@ -74,7 +74,7 @@ const Home = () => {
 
         const fetchHomeContent = async () => {
             try {
-                const data = await api.get('/content/home');
+                const data = await api.get(`/content/home?lng=${i18n.language}`);
                 if (data?.whyChoose) setHomeWhyChoose(data.whyChoose);
                 if (data?.mission) setHomeMission(data.mission);
             } catch (error) {
@@ -84,7 +84,7 @@ const Home = () => {
 
         fetchCars();
         fetchHomeContent();
-    }, [startDate, endDate, t]);
+    }, [startDate, endDate, t, i18n.language]);
 
     const filteredCars = cars.filter(car => {
         const matchesSearch = `${car.make} ${car.model}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -359,27 +359,27 @@ const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-                        <div className="bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                        <a href="https://maps.google.com/?q=Bole+Road,+Addis+Ababa,+Ethiopia" target="_blank" rel="noopener noreferrer" className="block bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg hover:border-primary/30 transition-all duration-300 hover:-translate-y-1">
                             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                                 <MapPin className="text-primary" size={22} />
                             </div>
                             <h3 className="font-bold text-foreground text-center mb-2">{t('contact.address')}</h3>
-                            <p className="text-muted-foreground text-sm text-center">{t('contact.addressText')}</p>
-                        </div>
-                        <div className="bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                            <p className="text-muted-foreground text-sm text-center hover:text-primary transition-colors">{t('contact.addressText')}</p>
+                        </a>
+                        <a href="tel:+251900000000" className="block bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg hover:border-primary/30 transition-all duration-300 hover:-translate-y-1">
                             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                                 <Phone className="text-primary" size={22} />
                             </div>
                             <h3 className="font-bold text-foreground text-center mb-2">{t('contact.phone')}</h3>
-                            <p className="text-muted-foreground text-sm text-center">+251 900 000 000</p>
-                        </div>
-                        <div className="bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                            <p className="text-muted-foreground text-sm text-center hover:text-primary transition-colors">+251 900 000 000</p>
+                        </a>
+                        <a href="mailto:info@teddyrental.com" className="block bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg hover:border-primary/30 transition-all duration-300 hover:-translate-y-1">
                             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                                 <Mail className="text-primary" size={22} />
                             </div>
                             <h3 className="font-bold text-foreground text-center mb-2">{t('contact.email')}</h3>
-                            <p className="text-muted-foreground text-sm text-center">info@teddyrental.com</p>
-                        </div>
+                            <p className="text-muted-foreground text-sm text-center hover:text-primary transition-colors">info@teddyrental.com</p>
+                        </a>
                         <div className="bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                                 <Clock className="text-primary" size={22} />

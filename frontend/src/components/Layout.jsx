@@ -21,17 +21,17 @@ const Layout = () => {
         <div className="min-h-screen flex flex-col font-sans bg-background text-foreground transition-colors duration-300">
             {/* Header */}
             <header className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm/5">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-end justify-between pb-4">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
 
                     {/* Left Group: Logo & Navigation */}
-                    <div className="flex items-end gap-16">
+                    <div className="flex items-center gap-10">
                         {/* Logo Section - Left Bottom */}
                         <Link to="/" className="flex items-center transition-transform hover:scale-105 active:scale-95 duration-200">
-                            <img src={logo} alt="Teddy Rental" className="w-24 h-10 object-contain" />
+                            <img src={logo} alt="Teddy Rental" className="w-32 h-12 object-contain" />
                         </Link>
 
                         {/* Navigation - Spaced by Proximity */}
-                        <nav className="hidden lg:flex items-center gap-10 mb-1">
+                        <nav className="hidden lg:flex items-center gap-10">
                             <Link to="/" className="group flex items-center gap-2.5 text-muted-foreground hover:text-foreground font-semibold transition-all duration-300">
                                 <HomeIcon size={18} className="group-hover:scale-110 transition-transform" />
                                 <span className="relative">
@@ -55,14 +55,14 @@ const Layout = () => {
                                     <Link to="/payments" className="group flex items-center gap-2.5 text-muted-foreground hover:text-foreground font-semibold transition-all duration-300">
                                         <Wallet size={18} className="group-hover:scale-110 transition-transform" />
                                         <span className="relative">
-                                            Balance
+                                            {t('nav.balance')}
                                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
                                         </span>
                                     </Link>
                                     <Link to="/notifications" className="group flex items-center gap-2.5 text-muted-foreground hover:text-foreground font-semibold transition-all duration-300">
                                         <Bell size={18} className="group-hover:scale-110 transition-transform" />
                                         <span className="relative">
-                                            Notifications
+                                            {t('nav.notifications')}
                                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
                                         </span>
                                     </Link>
@@ -71,7 +71,7 @@ const Layout = () => {
                                 <Link to="/notifications" className="group flex items-center gap-2.5 text-muted-foreground hover:text-foreground font-semibold transition-all duration-300">
                                     <Bell size={18} className="group-hover:scale-110 transition-transform" />
                                     <span className="relative">
-                                        Notifications
+                                        {t('nav.notifications')}
                                         <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
                                     </span>
                                 </Link>
@@ -88,7 +88,7 @@ const Layout = () => {
                     </div>
 
                     {/* Right Group: Actions */}
-                    <div className="flex items-center gap-6 mb-1">
+                    <div className="flex items-center gap-6">
                         <ThemeToggle />
                         <LanguageSwitcher />
                         {!isAuthenticated ? (
@@ -155,16 +155,16 @@ const Layout = () => {
                     <div>
                         <h4 className="font-bold mb-4">{t('footer.legal')}</h4>
                         <ul className="space-y-2 text-gray-400">
-                            <li><Link to="/terms" className="hover:text-white">{t('footer.terms')}</Link></li>
-                            <li><Link to="/privacy" className="hover:text-white">{t('footer.privacy')}</Link></li>
+                            <li><Link to="/terms" className="hover:text-white">{t('terms')}</Link></li>
+                            <li><Link to="/privacy" className="hover:text-white">{t('privacy')}</Link></li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="font-bold mb-4">{t('footer.connect')}</h4>
-                        <div className="text-gray-400">
-                            <p>{t('contact.addressText')}</p>
-                            <p>+251 900 000 000</p>
-                            <p>info@teddyrental.com</p>
+                        <div className="flex flex-col space-y-2 text-gray-400">
+                            <a href="https://maps.google.com/?q=Bole+Road,+Addis+Ababa,+Ethiopia" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('contact.addressText')}</a>
+                            <a href="tel:+251900000000" className="hover:text-white transition-colors">+251 900 000 000</a>
+                            <a href="mailto:info@teddyrental.com" className="hover:text-white transition-colors">info@teddyrental.com</a>
                         </div>
                     </div>
                 </div>

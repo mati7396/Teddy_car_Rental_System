@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 
 const SimulationControl = () => {
     const [vehicleId, setVehicleId] = useState('veh-1');
-    const [lat, setLat] = useState(9.0);
-    const [lng, setLng] = useState(38.7);
+    // Default to Teddy Car Rental Office Garage (Bole, Addis Ababa)
+    const [lat, setLat] = useState(9.0035);
+    const [lng, setLng] = useState(38.7825);
     const [speed, setSpeed] = useState(30);
     const [running, setRunning] = useState(false);
     const [lastUpdate, setLastUpdate] = useState(null);
@@ -24,6 +25,9 @@ const SimulationControl = () => {
 
     const start = () => {
         if (running) return;
+        if (!isWithinEthiopia(lat, lng)) {
+            return alert('Start coordinates must be within Ethiopia.');
+        }
         setRunning(true);
         intervalRef.current = setInterval(() => {
             // small random walk
@@ -44,9 +48,17 @@ const SimulationControl = () => {
         intervalRef.current = null;
     };
 
-    // whenever lat/lng change and running, send update
+    // Simple Ethiopia bounding-box validation
+    const isWithinEthiopia = (la, ln) => {
+        if (typeof la !== 'number' || typeof ln !== 'number') return false;
+        // Ethiopia approximate bounding box: lat 3.0..15.0, lng 32.0..48.5
+        return la >= 3.0 && la <= 15.0 && ln >= 32.0 && ln <= 48.5;
+    };
+
+    // whenever lat/lng change and running, send update (only if within Ethiopia)
     useEffect(() => {
         if (!running) return;
+        if (!isWithinEthiopia(lat, lng)) return;
         const payload = { vehicleId, lat, lng, speed, timestamp: Date.now() };
         sendUpdate(payload);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,13 +97,19 @@ const SimulationControl = () => {
             <Input value={lng} onChange={(e) => setLng(Number(e.target.value))} className="w-28" />
             <Input value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="w-20" />
             {!running ? (
-                <Button size="sm" onClick={start}>Start</Button>
+                <Button size="sm" onClick={start} disabled={!isWithinEthiopia(lat, lng)}>Start</Button>
             ) : (
                 <Button size="sm" variant="destructive" onClick={stop}>Stop</Button>
             )}
-            <Button size="sm" onClick={() => sendUpdate({ vehicleId, lat, lng, speed, timestamp: Date.now() })}>Send</Button>
+            <Button size="sm" onClick={() => {
+                if (!isWithinEthiopia(lat, lng)) return alert('Coordinates must be within Ethiopia to send.');
+                sendUpdate({ vehicleId, lat, lng, speed, timestamp: Date.now() });
+            }}>Send</Button>
             {lastUpdate && (
                 <div className="ml-3 text-xs text-muted-foreground">{`(${lastUpdate.lat.toFixed(5)}, ${lastUpdate.lng.toFixed(5)})`}</div>
+            )}
+            {!isWithinEthiopia(lat, lng) && (
+                <div className="ml-3 text-xs text-destructive">Coordinates outside Ethiopia — Start/Send disabled.</div>
             )}
         </div>
     );

@@ -17,8 +17,15 @@ const simulateUpdate = (data) => {
         deliveryStatus: data.deliveryStatus || null,
         timestamp: timestamp || Date.now()
     };
-    latestByVehicle.set(vehicleId, payload);
-    emitter.emit('update', payload);
+    // If the payload indicates the delivery is completed, remove it from the in-memory store
+    // but still emit an update so connected clients can remove it from their UI.
+    if (payload.deliveryStatus === 'DELIVERED') {
+        latestByVehicle.delete(vehicleId);
+        emitter.emit('update', payload);
+    } else {
+        latestByVehicle.set(vehicleId, payload);
+        emitter.emit('update', payload);
+    }
     return payload;
 };
 
@@ -107,21 +114,34 @@ const getActiveVehicles = async (req, res, next) => {
         const now = new Date();
         const thirtyMinsFromNow = new Date(now.getTime() + 30 * 60 * 1000);
 
+        // Only consider bookings that are not completed: either the booking endDate is in the future
+        // or the delivery is currently in-progress (ASSIGNED/ACCEPTED/ON_THE_WAY).
+        // Exclude bookings whose delivery status is DELIVERED or whose endDate is in the past.
         const activeBookings = await prisma.booking.findMany({
             where: {
-                OR: [
-                    { status: 'ACTIVE' },
+                AND: [
                     {
-                        status: 'PAID',
-                        isDelivery: true,
-                        startDate: { lte: thirtyMinsFromNow }
+                        OR: [
+                            { status: 'ACTIVE' },
+                            {
+                                status: 'PAID',
+                                isDelivery: true,
+                                startDate: { lte: thirtyMinsFromNow }
+                            },
+                            {
+                                delivery: {
+                                    status: {
+                                        in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY']
+                                    }
+                                }
+                            }
+                        ]
                     },
                     {
-                        delivery: {
-                            status: {
-                                in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY', 'DELIVERED']
-                            }
-                        }
+                        OR: [
+                            { endDate: { gt: now } },
+                            { delivery: { status: { in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY'] } } }
+                        ]
                     }
                 ]
             },
@@ -193,8 +213,51 @@ const stream = (req, res) => {
     const listener = (payload) => send(payload);
     emitter.on('update', listener);
 
-    // Send current snapshot
-    for (const v of latestByVehicle.values()) send(v);
+    // Send current snapshot, but only for vehicles with active bookings (avoid showing completed ones)
+    (async () => {
+        try {
+            const now = new Date();
+            const thirtyMinsFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+            const activeBookings = await prisma.booking.findMany({
+                where: {
+                    AND: [
+                        {
+                            OR: [
+                                { status: 'ACTIVE' },
+                                {
+                                    status: 'PAID',
+                                    isDelivery: true,
+                                    startDate: { lte: thirtyMinsFromNow }
+                                },
+                                {
+                                    delivery: {
+                                        status: {
+                                            in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY']
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            OR: [
+                                { endDate: { gt: now } },
+                                { delivery: { status: { in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY'] } } }
+                            ]
+                        }
+                    ]
+                },
+                include: { car: true }
+            });
+
+            const activeIds = new Set(activeBookings.map(b => b.car && b.car.plateNumber).filter(Boolean));
+            for (const v of latestByVehicle.values()) {
+                if (activeIds.has(v.vehicleId)) send(v);
+            }
+        } catch (e) {
+            // On error, fall back to sending all known latest positions
+            for (const v of latestByVehicle.values()) send(v);
+        }
+    })();
 
     req.on('close', () => {
         emitter.removeListener('update', listener);

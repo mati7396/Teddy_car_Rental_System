@@ -16,33 +16,33 @@ const Contact = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
                     {/* Contact Info */}
                     <div className="space-y-8">
-                        <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <a href="https://maps.google.com/?q=Bole+Road,+Addis+Ababa,+Ethiopia" target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 group hover:opacity-90 transition-opacity">
+                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
                                 <MapPin className="text-primary" size={20} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-foreground">{t('contact.address')}</h3>
-                                <p className="text-muted-foreground">{t('contact.addressText')}</p>
+                                <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{t('contact.address')}</h3>
+                                <p className="text-muted-foreground group-hover:text-foreground transition-colors">{t('contact.addressText')}</p>
                             </div>
-                        </div>
-                        <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        </a>
+                        <a href="tel:+251900000000" className="flex items-start gap-4 group hover:opacity-90 transition-opacity">
+                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
                                 <Phone className="text-primary" size={20} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-foreground">{t('contact.phone')}</h3>
-                                <p className="text-muted-foreground">+251 900 000 000</p>
+                                <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{t('contact.phone')}</h3>
+                                <p className="text-muted-foreground group-hover:text-foreground transition-colors">+251 900 000 000</p>
                             </div>
-                        </div>
-                        <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        </a>
+                        <a href="mailto:info@teddyrental.com" className="flex items-start gap-4 group hover:opacity-90 transition-opacity">
+                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
                                 <Mail className="text-primary" size={20} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-foreground">{t('contact.email')}</h3>
-                                <p className="text-muted-foreground">info@teddyrental.com</p>
+                                <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{t('contact.email')}</h3>
+                                <p className="text-muted-foreground group-hover:text-foreground transition-colors">info@teddyrental.com</p>
                             </div>
-                        </div>
+                        </a>
                         <div className="flex items-start gap-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <Clock className="text-primary" size={20} />

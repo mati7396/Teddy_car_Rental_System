@@ -29,6 +29,7 @@ import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminPackages from './pages/admin/AdminPackages';
 import AdminDrivers from './pages/admin/AdminDrivers';
 import AdminFinancials from './pages/admin/AdminFinancials';
+import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminLogout from './pages/admin/AdminLogout';
 import PendingVerification from './pages/PendingVerification';
@@ -140,6 +141,9 @@ function App() {
             } />
             <Route path="/admin/drivers" element={
               <ProtectedRoute roles={['ADMIN']}><AdminDrivers /></ProtectedRoute>
+            } />
+            <Route path="/admin/customers" element={
+              <ProtectedRoute roles={['ADMIN']}><AdminCustomers /></ProtectedRoute>
             } />
             <Route path="/admin/financials" element={
               <ProtectedRoute roles={['ADMIN']}><AdminFinancials /></ProtectedRoute>

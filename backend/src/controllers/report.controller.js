@@ -75,7 +75,9 @@ const getRecentTransactions = async (req, res) => {
             amount: Number(tx.amount || 0),
             status: tx.status,
             date: tx.createdAt,
-            description: tx.description || null
+            description: tx.description || null,
+            pickupDate: tx.booking ? tx.booking.startDate : null,
+            returnDate: tx.booking ? (tx.booking.actualReturnDate || tx.booking.endDate) : null
         }));
 
         res.json(transactions);
@@ -87,37 +89,107 @@ const getRecentTransactions = async (req, res) => {
 
 const getChartData = async (req, res) => {
     try {
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const chartData = {};
-
+        const { timeframe = 'monthly' } = req.query;
         const bankTransactions = await prisma.bankTransaction.findMany({
             where: {
                 type: { in: ['PAYMENT', 'REFUND', 'CANCELLATION_FEE'] },
                 status: 'SUCCESS'
             },
-            select: { type: true, amount: true, createdAt: true }
+            select: { type: true, amount: true, createdAt: true },
+            orderBy: { createdAt: 'asc' }
         });
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const chartData = {};
+
+        const getStartOfWeek = (d) => {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            const start = new Date(date.setDate(diff));
+            start.setHours(0,0,0,0);
+            return start;
+        };
 
         bankTransactions.forEach((entry) => {
             const date = new Date(entry.createdAt);
-            const key = `${months[date.getMonth()]} ${date.getFullYear()}`;
-            if (!chartData[key]) chartData[key] = { name: key, payments: 0, refunds: 0, cancellationFees: 0, netRevenue: 0 };
+            let key = '';
 
+            if (timeframe === 'daily') {
+                key = `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+            } else if (timeframe === 'weekly') {
+                const start = getStartOfWeek(entry.createdAt);
+                key = `Week of ${months[start.getMonth()]} ${start.getDate()}, ${start.getFullYear()}`;
+            } else {
+                // monthly
+                key = `${months[date.getMonth()]} ${date.getFullYear()}`;
+            }
+
+            if (!chartData[key]) {
+                chartData[key] = {
+                    name: key,
+                    payments: 0,
+                    refunds: 0,
+                    cancellationFees: 0,
+                    netRevenue: 0
+                };
+            }
+
+            const amount = Number(entry.amount || 0);
             if (entry.type === 'REFUND') {
-                chartData[key].refunds += Number(entry.amount || 0);
-                chartData[key].netRevenue -= Number(entry.amount || 0);
+                chartData[key].refunds += amount;
+                chartData[key].netRevenue -= amount;
             } else if (entry.type === 'PAYMENT') {
-                chartData[key].payments += Number(entry.amount || 0);
-                chartData[key].netRevenue += Number(entry.amount || 0);
+                chartData[key].payments += amount;
+                chartData[key].netRevenue += amount;
             } else if (entry.type === 'CANCELLATION_FEE') {
-                chartData[key].cancellationFees += Number(entry.amount || 0);
-                chartData[key].netRevenue += Number(entry.amount || 0);
+                chartData[key].cancellationFees += amount;
+                chartData[key].netRevenue += amount;
             }
         });
 
         res.json(Object.values(chartData));
     } catch (error) {
         console.error('Get chart data error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+const getMostRentedCars = async (req, res) => {
+    try {
+        const carsWithBookings = await prisma.car.findMany({
+            select: {
+                id: true,
+                make: true,
+                model: true,
+                plateNumber: true,
+                _count: {
+                    select: {
+                        bookings: {
+                            where: {
+                                status: {
+                                    in: ['APPROVED', 'PAID', 'ACTIVE', 'COMPLETED']
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const data = carsWithBookings.map(car => ({
+            id: car.id,
+            name: `${car.make} ${car.model} (${car.plateNumber})`,
+            make: car.make,
+            model: car.model,
+            bookingsCount: car._count.bookings
+        }))
+        .sort((a, b) => b.bookingsCount - a.bookingsCount)
+        .slice(0, 10);
+
+        res.json(data);
+    } catch (error) {
+        console.error('Get most rented cars error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -315,5 +387,35 @@ module.exports = {
     getNotifications,
     getMyNotifications,
     markNotificationRead,
-    getReceipts
+    getReceipts,
+    getMostRentedCars
 };
+
+
+const getCustomersByRentalCount = async (req, res) => {
+    try {
+        const customers = await prisma.user.findMany({
+            where: { role: 'CUSTOMER' },
+            include: { customerProfile: true, bookings: true }
+        });
+
+        const mapped = customers.map(c => ({
+            id: c.id,
+            email: c.email,
+            name: c.customerProfile ? `${c.customerProfile.firstName} ${c.customerProfile.lastName}` : c.email,
+            phone: c.customerProfile ? c.customerProfile.phoneNumber : null,
+            rentals: c.bookings ? c.bookings.length : 0
+        }));
+
+        // sort ascending by rentals
+        mapped.sort((a, b) => a.rentals - b.rentals);
+
+        res.json(mapped);
+    } catch (error) {
+        console.error('Get customers by rental count failed:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Export the new handler
+module.exports.getCustomersByRentalCount = getCustomersByRentalCount;

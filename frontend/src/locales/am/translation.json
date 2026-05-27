@@ -7,7 +7,9 @@
         "signIn": "ግባ",
         "signUp": "ተመዝገብ",
         "signOut": "ውጣ",
-        "currentLang": "አማርኛ"
+        "currentLang": "አማርኛ",
+        "balance": "ቀሪ ሂሳብ",
+        "notifications": "ማሳወቂያዎች"
     },
     "hero": {
         "title": "ዛሬ የ<1>ህልምዎን</1> መኪና ይንዱ",

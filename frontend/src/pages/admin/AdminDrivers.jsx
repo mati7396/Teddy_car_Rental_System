@@ -88,7 +88,7 @@ const AdminDrivers = () => {
             fetchDrivers();
         } catch (error) {
             console.error('Failed to create driver:', error);
-            toast.error(error.response?.data?.message || "Creation failed");
+            toast.error(error.message || "Creation failed");
         } finally {
             setCreateLoading(false);
         }
@@ -102,7 +102,7 @@ const AdminDrivers = () => {
             fetchDrivers();
         } catch (error) {
             console.error('Failed to delete driver:', error);
-            toast.error(error.response?.data?.message || "Deletion failed");
+            toast.error(error.message || "Deletion failed");
         }
     };
 
@@ -139,7 +139,7 @@ const AdminDrivers = () => {
             fetchDrivers();
         } catch (error) {
             console.error('Failed to update driver:', error);
-            toast.error(error.response?.data?.message || 'Update failed');
+            toast.error(error.message || 'Update failed');
         } finally {
             setEditLoading(false);
         }

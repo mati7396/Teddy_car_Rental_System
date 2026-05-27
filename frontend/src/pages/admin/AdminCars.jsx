@@ -23,6 +23,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -43,6 +44,8 @@ const AdminCars = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filters, setFilters] = useState({ status: 'ANY', category: 'ANY' });
     const [editingCar, setEditingCar] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -89,6 +92,11 @@ const AdminCars = () => {
             imageUrl: ''
         });
         setEditingCar(null);
+    };
+
+    const applyFilters = (newFilters) => {
+        setFilters(newFilters);
+        setIsFilterOpen(false);
     };
 
     const handleOpenDialog = (car = null) => {
@@ -201,11 +209,16 @@ const AdminCars = () => {
         }
     };
 
-    const filteredCars = cars.filter(car =>
-        car.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        car.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        car.plateNumber.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredCars = cars.filter(car => {
+        const q = searchQuery.trim().toLowerCase();
+        if (q) {
+            const matchesQuery = car.model.toLowerCase().includes(q) || car.make.toLowerCase().includes(q) || car.plateNumber.toLowerCase().includes(q);
+            if (!matchesQuery) return false;
+        }
+        if (filters.status && filters.status !== 'ANY' && car.status !== filters.status) return false;
+        if (filters.category && filters.category !== 'ANY' && car.category !== filters.category) return false;
+        return true;
+    });
 
 
     return (
@@ -235,10 +248,13 @@ const AdminCars = () => {
                         </div>
                         <div className="flex gap-2 w-full md:w-auto">
                             {loading && <Loader2 className="animate-spin text-primary" size={20} />}
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsFilterOpen(true)}>
                                 <Filter size={14} /> Filter
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSearchQuery('')}>Reset</Button>
+                            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => {
+                                setSearchQuery('');
+                                setFilters({ status: 'ANY', category: 'ANY' });
+                            }}>Reset</Button>
                         </div>
                     </div>
                     <Table>
@@ -384,6 +400,52 @@ const AdminCars = () => {
                     </DialogContent>
                 </Dialog>
             </AdminLayout>
+
+            {/* Filter Dialog */}
+            <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Filter Vehicles</DialogTitle>
+                    </DialogHeader>
+                        <div className="grid grid-cols-1 gap-4 py-2">
+                        <div>
+                            <Label>Availability Status</Label>
+                            <Select value={filters.status} onValueChange={val => setFilters(prev => ({ ...prev, status: val }))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Any" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ANY">Any</SelectItem>
+                                    <SelectItem value="AVAILABLE">Available</SelectItem>
+                                    <SelectItem value="RENTED">Rented</SelectItem>
+                                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                                    <SelectItem value="UNAVAILABLE">Unavailable</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label>Category</Label>
+                            <Select value={filters.category} onValueChange={val => setFilters(prev => ({ ...prev, category: val }))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Any" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ANY">Any</SelectItem>
+                                    <SelectItem value="Economy">Economy</SelectItem>
+                                    <SelectItem value="SUV">SUV</SelectItem>
+                                    <SelectItem value="Luxury">Luxury</SelectItem>
+                                    <SelectItem value="Utility">Utility</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogDescription className="text-sm text-muted-foreground">Filter the fleet by availability status and category. Choose "Any" to remove a filter.</DialogDescription>
+                    <DialogFooter className="mt-4">
+                        <Button variant="outline" onClick={() => { setFilters({ status: 'ANY', category: 'ANY' }); setSearchQuery(''); setIsFilterOpen(false); }}>Reset</Button>
+                        <Button onClick={() => setIsFilterOpen(false)}>Apply</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Confirm Delete Dialog */}
             <Dialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>

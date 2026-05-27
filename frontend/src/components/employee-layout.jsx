@@ -25,7 +25,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import PaymentDetailModal from '@/components/PaymentDetailModal';
 import { ThemeToggle } from "@/components/theme-toggle";
-import SimulationControl from './SimulationControl';
 
 const EmployeeLayout = ({ children }) => {
     const navigate = useNavigate();
@@ -224,8 +223,7 @@ const EmployeeLayout = ({ children }) => {
 
                     {/* Right Section: Theme Toggle + User Profile */}
                     <div className="flex items-center gap-2">
-                        {/* Simulation control */}
-                        <SimulationControl />
+                        {/* Simulation control removed from header */}
                         {/* Theme Toggle */}
                         <ThemeToggle />
 

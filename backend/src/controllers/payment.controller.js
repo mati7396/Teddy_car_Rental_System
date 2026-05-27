@@ -2,7 +2,7 @@ const prisma = require('../utils/prismaClient');
 
 const VAT_RATE = Number(process.env.LOCAL_BANK_VAT_RATE || 0.15);
 const SYSTEM_ACCOUNT_NUMBER = process.env.SYSTEM_ACCOUNT_NUMBER || 'SYS-0000000001';
-const DEFAULT_OPENING_BALANCE = Number(process.env.LOCAL_BANK_OPENING_BALANCE || 10000);
+const DEFAULT_OPENING_BALANCE = Number(process.env.LOCAL_BANK_OPENING_BALANCE || 20000);
 
 const generateAccountNumber = (userId) => `LBA-${String(userId).padStart(10, '0')}`;
 

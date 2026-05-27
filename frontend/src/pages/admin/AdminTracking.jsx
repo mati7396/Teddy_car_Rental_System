@@ -143,6 +143,7 @@ const AdminTracking = () => {
 
     const [vehicles, setVehicles] = useState({});
     const [selectedVehicle, setSelectedVehicle] = useState(null);
+    const [addresses, setAddresses] = useState({}); // cache reverse geocoded addresses by vehicleId
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [activeRouteIndex, setActiveRouteIndex] = useState(1); // Default to shortcut!
@@ -196,6 +197,22 @@ const AdminTracking = () => {
                 es.addEventListener('update', (e) => {
                     try {
                         const data = JSON.parse(e.data);
+                        // If a delivery has been completed, remove it from the active vehicles list
+                        if (data.isDelivery && data.deliveryStatus === 'DELIVERED') {
+                            setVehicles(prev => {
+                                const next = { ...prev };
+                                delete next[data.vehicleId];
+                                return next;
+                            });
+                            setAddresses(prev => {
+                                const next = { ...prev };
+                                delete next[data.vehicleId];
+                                return next;
+                            });
+                            setSelectedVehicle(prev => (prev && prev.vehicleId === data.vehicleId ? null : prev));
+                            return;
+                        }
+
                         setVehicles(prev => {
                             const existing = prev[data.vehicleId] || {};
                             return {
@@ -246,6 +263,32 @@ const AdminTracking = () => {
             }
         };
     }, []);
+
+    // Reverse-geocode vehicle coordinates to get a readable address (cached per vehicle)
+    useEffect(() => {
+        const vehicleArray = Object.values(vehicles);
+        vehicleArray.forEach(v => {
+            if (!v || !v.lat || !v.lng) return;
+            if (addresses[v.vehicleId]) return; // already cached
+
+            const fetchAddress = async () => {
+                try {
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${v.lat}&lon=${v.lng}&zoom=18&addressdetails=1&accept-language=en&countrycodes=et`;
+                    const r = await fetch(url, { headers: { 'User-Agent': 'TeddyCarRental/1.0 (contact@teddyrental.com)' } });
+                    if (!r.ok) throw new Error('Reverse geocode failed');
+                    const j = await r.json();
+                    const display = j.display_name || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`;
+                    setAddresses(prev => ({ ...prev, [v.vehicleId]: display }));
+                } catch (err) {
+                    // fallback to coordinates
+                    setAddresses(prev => ({ ...prev, [v.vehicleId]: `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}` }));
+                }
+            };
+
+            // debounce small bursts
+            setTimeout(fetchAddress, 200);
+        });
+    }, [vehicles]);
 
     const vehicleList = Object.values(vehicles);
     const center = [9.0227, 38.7460]; // Default Addis Ababa center
@@ -311,10 +354,10 @@ const AdminTracking = () => {
                                                 </Badge>
                                             </div>
                                             <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                                                <div className="flex items-center gap-1">
-                                                    <Navigation size={10} className="rotate-45 text-primary" />
-                                                    <span>{v.lat.toFixed(4)}, {v.lng.toFixed(4)}</span>
-                                                </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Navigation size={10} className="rotate-45 text-primary" />
+                                                        <span className="text-xs text-muted-foreground">{v.lat.toFixed(4)}, {v.lng.toFixed(4)}</span>
+                                                    </div>
                                                 {v.isDelivery && (
                                                     <Badge variant="secondary" className="text-[8px] h-3.5 px-1 bg-amber-500/10 text-amber-600 border-none shrink-0 font-bold">
                                                         Delivery
@@ -398,16 +441,11 @@ const AdminTracking = () => {
                                                 }}
                                             >
                                                 <Popup>
-                                                    <div className="p-2 space-y-1.5 min-w-[140px]">
-                                                        <p className="font-bold text-xs text-primary border-b border-primary/20 pb-1">
-                                                            Plate: {v.vehicleId}
-                                                        </p>
-                                                        <p className="text-[10px] font-bold text-foreground leading-tight">
-                                                            {v.isDelivery && v.deliveryStatus === 'DELIVERED' ? 'Renter' : 'Driver'}: <span className="text-indigo-600 font-black">{v.assignedDriver}</span>
-                                                        </p>
-                                                        <p className="text-[9px] font-semibold text-muted-foreground">
-                                                            Speed: {v.speed} km/h
-                                                        </p>
+                                                    <div className="p-2 space-y-1.5 min-w-[160px]">
+                                                        <p className="font-bold text-xs text-primary border-b border-primary/20 pb-1">Plate: {v.vehicleId}</p>
+                                                        <p className="text-[10px] font-bold text-foreground leading-tight">{v.isDelivery && v.deliveryStatus === 'DELIVERED' ? 'Renter' : 'Driver'}: <span className="text-indigo-600 font-black">{v.assignedDriver}</span></p>
+                                                        <p className="text-[9px] font-semibold text-muted-foreground">Speed: {v.speed} km/h</p>
+                                                        <p className="text-[10px] text-muted-foreground">Address: <span className="font-semibold text-foreground">{addresses[v.vehicleId] || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`}</span></p>
                                                         {v.isDelivery && (
                                                             <div className={`text-[8px] font-black px-1 py-0.5 rounded w-max mt-1 ${
                                                                 v.deliveryStatus === 'DELIVERED'
@@ -557,21 +595,18 @@ const AdminTracking = () => {
                                                         <Car size={14} className="text-primary" />
                                                         <span className="font-bold">{v.vehicleId}</span>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px]">
-                                                        <span className="text-muted-foreground text-primary font-bold">
-                                                            {v.isDelivery && v.deliveryStatus === 'DELIVERED' ? 'Renter:' : 'Driver:'}
-                                                        </span>
-                                                        <span className="font-semibold text-indigo-600 truncate">{v.assignedDriver || 'N/A'}</span>
-                                                        <span className="text-muted-foreground">Speed:</span>
-                                                        <span className="font-semibold text-primary">{v.speed} km/h</span>
-                                                        <span className="text-muted-foreground">Latitude:</span>
-                                                        <span>{v.lat.toFixed(5)}</span>
-                                                        <span className="text-muted-foreground">Longitude:</span>
-                                                        <span>{v.lng.toFixed(5)}</span>
+                                                    <div className="grid grid-cols-1 gap-y-1 text-[10px]">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground text-primary font-bold">{v.isDelivery && v.deliveryStatus === 'DELIVERED' ? 'Renter:' : 'Driver:'}</span>
+                                                            <span className="font-semibold text-indigo-600 truncate">{v.assignedDriver || 'N/A'}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">Speed:</span>
+                                                            <span className="font-semibold text-primary">{v.speed} km/h</span>
+                                                        </div>
+                                                        <div className="text-muted-foreground">Address: <span className="font-semibold text-foreground">{addresses[v.vehicleId] || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`}</span></div>
                                                     </div>
-                                                    <p className="text-[10px] text-muted-foreground border-t pt-1 mt-1 italic">
-                                                        Updating in real-time...
-                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground border-t pt-1 mt-1 italic">Updating in real-time...</p>
                                                 </div>
                                             </Popup>
                                         </Marker>

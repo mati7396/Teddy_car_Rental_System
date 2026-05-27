@@ -53,21 +53,38 @@ const AdminFinancials = () => {
     const [currentMonthOnly, setCurrentMonthOnly] = useState(false);
     const [chartData, setChartData] = useState([]);
     const [receipts, setReceipts] = useState([]);
+    const [timeframe, setTimeframe] = useState('monthly');
+    const [mostRentedCars, setMostRentedCars] = useState([]);
+    const [chartLoading, setChartLoading] = useState(false);
+
+    const fetchChartData = async (selectedTimeframe) => {
+        setChartLoading(true);
+        try {
+            const chartRes = await api.get(`/reports/chart-data?timeframe=${selectedTimeframe}`);
+            setChartData(chartRes);
+        } catch (error) {
+            console.error('Failed to fetch chart data:', error);
+        } finally {
+            setChartLoading(false);
+        }
+    };
 
     useEffect(() => {
         const fetchFinancialData = async () => {
             try {
-                const [overview, txs, chartRes, receiptsRes] = await Promise.all([
+                const [overview, txs, chartRes, receiptsRes, carsRes] = await Promise.all([
                     api.get('/reports/financials'),
                     api.get('/reports/transactions'),
-                    api.get('/reports/chart-data'),
-                    api.get('/reports/receipts')
+                    api.get(`/reports/chart-data?timeframe=${timeframe}`),
+                    api.get('/reports/receipts'),
+                    api.get('/reports/most-rented-cars')
                 ]);
                 setStats(overview.summary);
                 setAllTransactions(txs);
                 setTransactions(txs);
                 setChartData(chartRes);
                 setReceipts(receiptsRes);
+                setMostRentedCars(carsRes);
             } catch (error) {
                 console.error('Failed to fetch financial data:', error);
             } finally {
@@ -76,6 +93,11 @@ const AdminFinancials = () => {
         };
         fetchFinancialData();
     }, []);
+
+    const handleTimeframeChange = async (newTimeframe) => {
+        setTimeframe(newTimeframe);
+        await fetchChartData(newTimeframe);
+    };
 
     const handleCurrentMonthFilter = () => {
         const now = new Date();
@@ -123,7 +145,23 @@ const AdminFinancials = () => {
                     <h1 className="text-3xl font-bold tracking-tight text-foreground">Financial Overview</h1>
                     <p className="text-muted-foreground mt-1">Track revenue, refunds, and financial performance.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3 items-center">
+                    {/* Timeframe Selector */}
+                    <div className="flex items-center bg-muted p-1 rounded-lg border border-border/80 mr-2">
+                        {['daily', 'weekly', 'monthly'].map((tf) => (
+                            <button
+                                key={tf}
+                                onClick={() => handleTimeframeChange(tf)}
+                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all uppercase tracking-wider ${
+                                    timeframe === tf
+                                        ? 'bg-background text-primary shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                {tf}
+                            </button>
+                        ))}
+                    </div>
                     <Button variant="outline" className="gap-2" onClick={handleCurrentMonthFilter}>
                         <Calendar size={16} />
                         {currentMonthOnly ? 'Show All' : 'Current Month'}
@@ -188,6 +226,7 @@ const AdminFinancials = () => {
 
             {/* Financial Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Revenue vs Refunds Distribution */}
                 <Card className="border-border/60 shadow-sm">
                     <CardHeader>
                         <CardTitle className="text-base">Revenue vs Refunds Distribution</CardTitle>
@@ -215,11 +254,13 @@ const AdminFinancials = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="border-border/60 shadow-sm">
-                    <CardHeader>
+                {/* Net Revenue Trend (Supports timeframe toggles) */}
+                <Card className="border-border/60 shadow-sm relative">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-base">Net Revenue Trend</CardTitle>
+                        {chartLoading && <Loader2 className="animate-spin text-primary h-4 w-4" />}
                     </CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className={`h-[300px] transition-opacity duration-200 ${chartLoading ? 'opacity-40 pointer-events-none' : ''}`}>
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                 <defs>
@@ -228,34 +269,85 @@ const AdminFinancials = () => {
                                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
-                                <XAxis dataKey="name" />
-                                <YAxis />
+                                <XAxis dataKey="name" stroke="#888888" fontSize={11} />
+                                <YAxis stroke="#888888" fontSize={11} />
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <Tooltip />
+                                <Tooltip formatter={(value) => `ETB ${value.toLocaleString()}`} />
                                 <Area type="monotone" dataKey="netRevenue" stackId="1" stroke="#10b981" fill="url(#colorProfit)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </CardContent>
                 </Card>
 
-                <Card className="border-border/60 shadow-sm lg:col-span-2">
-                    <CardHeader>
+                {/* Payments & Refunds Comparison (Supports timeframe toggles) */}
+                <Card className="border-border/60 shadow-sm relative">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-base">Payments & Refunds Comparison</CardTitle>
+                        {chartLoading && <Loader2 className="animate-spin text-primary h-4 w-4" />}
                     </CardHeader>
-                    <CardContent>
-                        <div className="h-[350px] w-full">
+                    <CardContent className={`h-[300px] transition-opacity duration-200 ${chartLoading ? 'opacity-40 pointer-events-none' : ''}`}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" stroke="#888888" fontSize={11} />
+                                <YAxis stroke="#888888" fontSize={11} />
+                                <Tooltip formatter={(value) => `ETB ${value.toLocaleString()}`} />
+                                <Legend />
+                                <Bar dataKey="payments" fill="#10b981" name="Payments" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="refunds" fill="#ef4444" name="Refunds" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                {/* Most Rented Vehicles (Popularity Chart) */}
+                <Card className="border-border/60 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-base font-bold">Most Rented Vehicles</CardTitle>
+                        <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-bold uppercase tracking-wide">
+                            Popularity
+                        </Badge>
+                    </CardHeader>
+                    <CardContent className="h-[300px] pb-6">
+                        {mostRentedCars.length === 0 ? (
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No rental booking data available.
+                            </div>
+                        ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value) => `ETB ${value}`} />
-                                    <Legend />
-                                    <Bar dataKey="payments" fill="#10b981" name="Payments" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="refunds" fill="#ef4444" name="Refunds" radius={[4, 4, 0, 0]} />
+                                <BarChart
+                                    layout="vertical"
+                                    data={mostRentedCars}
+                                    margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                    <XAxis type="number" allowDecimals={false} stroke="#888888" fontSize={11} />
+                                    <YAxis 
+                                        dataKey="name" 
+                                        type="category" 
+                                        width={145} 
+                                        stroke="#888888" 
+                                        fontSize={10} 
+                                        tickFormatter={(name) => name.split(' (')[0]}
+                                    />
+                                    <Tooltip 
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload;
+                                                return (
+                                                    <div className="bg-background border border-border p-3 rounded-lg shadow-md text-xs">
+                                                        <p className="font-bold text-foreground">{data.name}</p>
+                                                        <p className="text-indigo-600 font-semibold mt-1">Bookings: {data.bookingsCount}</p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    <Bar dataKey="bookingsCount" fill="#6366f1" radius={[0, 4, 4, 0]} name="Bookings" barSize={14} />
                                 </BarChart>
                             </ResponsiveContainer>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

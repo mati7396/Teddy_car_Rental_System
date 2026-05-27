@@ -237,21 +237,17 @@ const deleteDriver = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if driver has active deliveries
-        const activeDeliveries = await prisma.delivery.count({
-            where: {
-                driverId: parseInt(id),
-                status: { in: ['ASSIGNED', 'ON_THE_WAY'] }
-            }
+        // Check if driver has any deliveries tied to their account (including past deliveries).
+        // Deleting a driver that has deliveries will violate referential integrity, so refuse.
+        const totalDeliveries = await prisma.delivery.count({
+            where: { driverId: parseInt(id) }
         });
 
-        if (activeDeliveries > 0) {
-            return res.status(400).json({ message: 'Cannot delete driver with active deliveries' });
+        if (totalDeliveries > 0) {
+            return res.status(400).json({ message: 'Cannot delete driver with delivery records. Remove or reassign deliveries first.' });
         }
 
-        await prisma.driver.delete({
-            where: { id: parseInt(id) }
-        });
+        await prisma.driver.delete({ where: { id: parseInt(id) } });
 
         res.json({ message: 'Driver deleted successfully' });
     } catch (error) {

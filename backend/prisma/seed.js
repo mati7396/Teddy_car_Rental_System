@@ -340,7 +340,7 @@ async function main() {
             create: {
                 userId: u.id,
                 accountNumber,
-                balance: 10000,
+                balance: 20000,
                 accountType: 'CUSTOMER'
             }
         });

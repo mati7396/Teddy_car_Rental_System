@@ -10,7 +10,9 @@ router.get('/financials', authenticate, authorize('ADMIN', 'EMPLOYEE'), reportCo
 router.get('/transactions', authenticate, authorize('ADMIN', 'EMPLOYEE'), reportController.getRecentTransactions);
 router.get('/receipts', authenticate, authorize('ADMIN', 'EMPLOYEE'), reportController.getReceipts);
 router.get('/chart-data', authenticate, authorize('ADMIN', 'EMPLOYEE'), reportController.getChartData);
+router.get('/most-rented-cars', authenticate, authorize('ADMIN', 'EMPLOYEE'), reportController.getMostRentedCars);
 router.get('/notifications', authenticate, authorize('ADMIN', 'EMPLOYEE'), reportController.getNotifications);
+router.get('/customers-by-rentals', authenticate, authorize('ADMIN', 'EMPLOYEE'), reportController.getCustomersByRentalCount);
 router.get('/my-notifications', authenticate, reportController.getMyNotifications);
 router.patch('/notifications/:id/read', authenticate, reportController.markNotificationRead);
 

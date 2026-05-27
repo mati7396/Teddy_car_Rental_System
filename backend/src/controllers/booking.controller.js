@@ -11,7 +11,7 @@ const prisma = require('../utils/prismaClient');
 const CHAPA_BASE_URL = 'https://api.chapa.co/v1/transaction';
 const FULL_REFUND_WINDOW_HOURS = 24;
 const LATE_CANCELLATION_FEE_RATE = 0.15;
-const DEFAULT_OPENING_BALANCE = Number(process.env.LOCAL_BANK_OPENING_BALANCE || 10000);
+const DEFAULT_OPENING_BALANCE = Number(process.env.LOCAL_BANK_OPENING_BALANCE || 20000);
 const SYSTEM_ACCOUNT_NUMBER = process.env.SYSTEM_ACCOUNT_NUMBER || 'SYS-0000000001';
 
 const getFrontendBaseUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';

@@ -6,7 +6,9 @@
         "signIn": "Sign In",
         "signUp": "Sign Up",
         "signOut": "Sign Out",
-        "currentLang": "English"
+        "currentLang": "English",
+        "balance": "Balance",
+        "notifications": "Notifications"
     },
     "hero": {
         "title": "Drive Your <1>Dream</1> Today",

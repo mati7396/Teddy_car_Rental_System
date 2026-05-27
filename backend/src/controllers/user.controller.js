@@ -27,9 +27,20 @@ const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
         const user = await prisma.user.findUnique({
-            where: { id: parseInt(id) },
-            include: { customerProfile: true, bookings: true, bankAccount: true }
-        });
+                where: { id: parseInt(id) },
+                include: {
+                    customerProfile: true,
+                    bookings: {
+                        include: {
+                            car: true,
+                            payment: true,
+                            delivery: true
+                        },
+                        orderBy: { createdAt: 'desc' }
+                    },
+                    bankAccount: true
+                }
+            });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });

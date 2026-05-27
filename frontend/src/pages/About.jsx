@@ -59,11 +59,19 @@ const About = () => {
                 </div>
 
                 {/* Contact Info */}
-                <div className="mt-16 text-center">
+                <div className="mt-16 text-center max-w-md mx-auto">
                     <h2 className="text-2xl font-bold text-foreground mb-4">{t('aboutPage.visitUs')}</h2>
-                    <p className="text-muted-foreground">{t('contact.addressText')}</p>
-                    <p className="text-muted-foreground">{t('contact.phone')}: +251 900 000 000</p>
-                    <p className="text-muted-foreground">{t('contact.email')}: info@teddyrental.com</p>
+                    <div className="space-y-2">
+                        <a href="https://maps.google.com/?q=Bole+Road,+Addis+Ababa,+Ethiopia" target="_blank" rel="noopener noreferrer" className="block text-muted-foreground hover:text-primary transition-colors">
+                            {t('contact.addressText')}
+                        </a>
+                        <a href="tel:+251900000000" className="block text-muted-foreground hover:text-primary transition-colors">
+                            {t('contact.phone')}: +251 900 000 000
+                        </a>
+                        <a href="mailto:info@teddyrental.com" className="block text-muted-foreground hover:text-primary transition-colors">
+                            {t('contact.email')}: info@teddyrental.com
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
