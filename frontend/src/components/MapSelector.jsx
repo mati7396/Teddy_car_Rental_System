@@ -24,6 +24,12 @@ L.Icon.Default.mergeOptions({
 const OFFICE_LOCATION = [9.0227, 38.7460];
 const DELIVERY_RADIUS = 500; // meters
 
+// Ethiopia bounding box: [minLat, minLng, maxLat, maxLng]
+const ETHIOPIA_BOUNDS = L.latLngBounds(
+    L.latLng(3.4, 33.0),   // SW corner
+    L.latLng(14.9, 47.9)   // NE corner
+);
+
 const MapSelector = ({ onLocationChange, initialLocation = null, isReadOnly = false }) => {
     const [position, setPosition] = useState(initialLocation);
     const [isDelivery, setIsDelivery] = useState(false);
@@ -154,13 +160,16 @@ const MapSelector = ({ onLocationChange, initialLocation = null, isReadOnly = fa
 
         setIsSearching(true);
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
+            // Restrict search to Ethiopia using countrycodes and viewbox
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=et&viewbox=33.0,3.4,47.9,14.9&bounded=1&limit=1`
+            );
             const data = await res.json();
             if (data && data.length > 0) {
                 const newPos = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
                 handleLocationUpdate(newPos);
             } else {
-                alert("Location not found. Please try a different search term.");
+                alert("Location not found in Ethiopia. Please try a different search term.");
             }
         } catch (error) {
             console.error("Search error:", error);
@@ -219,7 +228,7 @@ const MapSelector = ({ onLocationChange, initialLocation = null, isReadOnly = fa
                     <form onSubmit={handleSearch} className="flex gap-2">
                         <div className="relative flex-1">
                             <Input
-                                placeholder="Search location (e.g. Bole, Addis Ababa)..."
+                                placeholder="Search in Ethiopia (e.g. Bole, Merkato, Hawassa)..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="h-9 pr-8 text-sm"
@@ -247,6 +256,9 @@ const MapSelector = ({ onLocationChange, initialLocation = null, isReadOnly = fa
                         zoom={15}
                         scrollWheelZoom={true}
                         className="h-full w-full"
+                        maxBounds={ETHIOPIA_BOUNDS}
+                        maxBoundsViscosity={1.0}
+                        minZoom={5}
                     >
                         <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

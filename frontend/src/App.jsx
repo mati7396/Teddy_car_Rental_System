@@ -20,6 +20,7 @@ import CancellationDetails from './pages/CancellationDetails';
 import Notifications from './pages/Notifications';
 import CustomerProfile from './pages/CustomerProfile';
 import Payments from './pages/Payments';
+import MyMessages from './pages/MyMessages';
 
 import Logout from './pages/Logout';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -32,6 +33,7 @@ import AdminFinancials from './pages/admin/AdminFinancials';
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminLogout from './pages/admin/AdminLogout';
+import AdminMessages from './pages/admin/AdminMessages';
 import PendingVerification from './pages/PendingVerification';
 import SecuritySettings from './pages/SecuritySettings';
 
@@ -119,6 +121,9 @@ function App() {
               <Route path="/profile" element={
                 <ProtectedRoute roles={['CUSTOMER']}><CustomerProfile /></ProtectedRoute>
               } />
+              <Route path="/my-messages" element={
+                <ProtectedRoute roles={['CUSTOMER']}><MyMessages /></ProtectedRoute>
+              } />
               <Route path="/logout" element={<Logout />} />
             </Route>
 
@@ -150,6 +155,9 @@ function App() {
             } />
             <Route path="/admin/profile" element={
               <ProtectedRoute roles={['ADMIN']}><AdminProfile /></ProtectedRoute>
+            } />
+            <Route path="/admin/messages" element={
+              <ProtectedRoute roles={['ADMIN', 'EMPLOYEE']}><AdminMessages /></ProtectedRoute>
             } />
             <Route path="/admin/logout" element={<AdminLogout />} />
 

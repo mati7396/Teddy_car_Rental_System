@@ -114,60 +114,53 @@ const getActiveVehicles = async (req, res, next) => {
         const now = new Date();
         const thirtyMinsFromNow = new Date(now.getTime() + 30 * 60 * 1000);
 
-        // Only consider bookings that are not completed: either the booking endDate is in the future
-        // or the delivery is currently in-progress (ASSIGNED/ACCEPTED/ON_THE_WAY).
-        // Exclude bookings whose delivery status is DELIVERED or whose endDate is in the past.
-        const activeBookings = await prisma.booking.findMany({
-            where: {
-                AND: [
-                    {
-                        OR: [
-                            { status: 'ACTIVE' },
-                            {
-                                status: 'PAID',
-                                isDelivery: true,
-                                startDate: { lte: thirtyMinsFromNow }
-                            },
-                            {
-                                delivery: {
-                                    status: {
-                                        in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY']
-                                    }
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        OR: [
-                            { endDate: { gt: now } },
-                            { delivery: { status: { in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY'] } } }
-                        ]
-                    }
-                ]
-            },
-            include: { 
-                car: true,
-                user: {
-                    include: {
-                        customerProfile: true
+        // Fetch active bookings and in-progress deliveries separately, then merge
+        const [activeBookings, deliveryBookings] = await Promise.all([
+            // Active/PAID rentals
+            prisma.booking.findMany({
+                where: {
+                    status: { in: ['ACTIVE', 'PAID'] },
+                    endDate: { gt: now }
+                },
+                include: {
+                    car: true,
+                    user: { include: { customerProfile: true } },
+                    delivery: { include: { driver: true } }
+                }
+            }),
+            // Bookings with in-progress deliveries (regardless of booking status)
+            prisma.booking.findMany({
+                where: {
+                    delivery: {
+                        status: { in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY'] }
                     }
                 },
-                delivery: {
-                    include: {
-                        driver: true
-                    }
+                include: {
+                    car: true,
+                    user: { include: { customerProfile: true } },
+                    delivery: { include: { driver: true } }
                 }
-            }
-        });
+            })
+        ]);
 
-        const vehicles = activeBookings
+        // Merge and deduplicate by booking id
+        const seen = new Set();
+        const allBookings = [];
+        for (const b of [...activeBookings, ...deliveryBookings]) {
+            if (!seen.has(b.id)) {
+                seen.add(b.id);
+                allBookings.push(b);
+            }
+        }
+
+        const vehicles = allBookings
             .filter(b => b.car && b.car.plateNumber)
             .map(b => {
                 let assignedDriver = 'No driver assigned';
                 if (b.isDelivery) {
                     if (b.delivery && b.delivery.status === 'DELIVERED') {
-                        assignedDriver = b.user && b.user.customerProfile 
-                            ? `${b.user.customerProfile.firstName} ${b.user.customerProfile.lastName}` 
+                        assignedDriver = b.user && b.user.customerProfile
+                            ? `${b.user.customerProfile.firstName} ${b.user.customerProfile.lastName}`
                             : 'Customer';
                     } else if (b.delivery && b.delivery.driver) {
                         assignedDriver = b.delivery.driver.fullName;
@@ -217,39 +210,22 @@ const stream = (req, res) => {
     (async () => {
         try {
             const now = new Date();
-            const thirtyMinsFromNow = new Date(now.getTime() + 30 * 60 * 1000);
-            const activeBookings = await prisma.booking.findMany({
-                where: {
-                    AND: [
-                        {
-                            OR: [
-                                { status: 'ACTIVE' },
-                                {
-                                    status: 'PAID',
-                                    isDelivery: true,
-                                    startDate: { lte: thirtyMinsFromNow }
-                                },
-                                {
-                                    delivery: {
-                                        status: {
-                                            in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY']
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            OR: [
-                                { endDate: { gt: now } },
-                                { delivery: { status: { in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY'] } } }
-                            ]
-                        }
-                    ]
-                },
-                include: { car: true }
-            });
+            const [activeBookings, deliveryBookings] = await Promise.all([
+                prisma.booking.findMany({
+                    where: { status: { in: ['ACTIVE', 'PAID'] }, endDate: { gt: now } },
+                    include: { car: true }
+                }),
+                prisma.booking.findMany({
+                    where: { delivery: { status: { in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY'] } } },
+                    include: { car: true }
+                })
+            ]);
 
-            const activeIds = new Set(activeBookings.map(b => b.car && b.car.plateNumber).filter(Boolean));
+            const activeIds = new Set(
+                [...activeBookings, ...deliveryBookings]
+                    .map(b => b.car && b.car.plateNumber)
+                    .filter(Boolean)
+            );
             for (const v of latestByVehicle.values()) {
                 if (activeIds.has(v.vehicleId)) send(v);
             }

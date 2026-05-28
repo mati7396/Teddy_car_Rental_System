@@ -95,21 +95,33 @@ function createVehicleState(vehicle) {
   let routePoints = null;
   let routeIndex = 0;
 
+  // Generate a unique small offset per vehicle so stationary cars at the garage
+  // don't stack on top of each other on the map
+  let hash = 0;
+  for (let i = 0; i < vehicle.vehicleId.length; i++) {
+    hash = vehicle.vehicleId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const garageOffsetLat = (Math.abs(hash % 50) / 50000) - 0.0005; // ±0.0005 (~55m)
+  const garageOffsetLon = (Math.abs((hash >> 8) % 50) / 50000) - 0.0005;
+
   if (vehicle.isDelivery && vehicle.deliveryStatus !== 'DELIVERED') {
-    // Delivery: starts at office garage and delivers to customer's deliveryLocation
-    startPos = { lat: OFFICE_GARAGE_LAT, lon: OFFICE_GARAGE_LON };
+    // Delivery: starts at office garage (with unique offset) and delivers to customer's deliveryLocation
+    startPos = {
+      lat: OFFICE_GARAGE_LAT + garageOffsetLat,
+      lon: OFFICE_GARAGE_LON + garageOffsetLon
+    };
     targetPos = parsePickupLocation(vehicle.deliveryLocation) || {
       lat: OFFICE_GARAGE_LAT,
       lon: OFFICE_GARAGE_LON
     };
     routePoints = generateRoutePath(startPos, targetPos);
-    console.log(`[STATE] Delivery Vehicle ${vehicle.vehicleId} starts at Office Garage -> delivers to ${vehicle.deliveryLocation || 'customer'} along route path.`);
+    console.log(`[STATE] Delivery Vehicle ${vehicle.vehicleId} starts at Office Garage (offset) -> delivers to ${vehicle.deliveryLocation || 'customer'} along route path.`);
   } else {
     // Normal rental (or already delivered rental): starts at pickupLocation / deliveryLocation
     const locationToUse = vehicle.isDelivery ? vehicle.deliveryLocation : vehicle.pickupLocation;
     startPos = parsePickupLocation(locationToUse) || {
-      lat: DEFAULT_LAT + (Math.random() - 0.5) * 0.05,
-      lon: DEFAULT_LON + (Math.random() - 0.5) * 0.05
+      lat: DEFAULT_LAT + garageOffsetLat,
+      lon: DEFAULT_LON + garageOffsetLon
     };
     targetPos = {
       lat: startPos.lat + (Math.random() - 0.5) * 0.02,

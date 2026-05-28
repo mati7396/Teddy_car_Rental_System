@@ -20,28 +20,28 @@ const About = () => {
             {/* Values */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
+                    <div className="bg-card rounded-xl p-6 shadow-sm border border-border text-center">
                         <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                             <Users className="text-primary" size={24} />
                         </div>
                         <h3 className="font-bold text-foreground mb-2">{t('whyChoose.customerFirst')}</h3>
                         <p className="text-sm text-muted-foreground">{t('whyChoose.customerFirstDesc')}</p>
                     </div>
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
+                    <div className="bg-card rounded-xl p-6 shadow-sm border border-border text-center">
                         <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                             <Award className="text-primary" size={24} />
                         </div>
                         <h3 className="font-bold text-foreground mb-2">{t('whyChoose.qualityFleet')}</h3>
                         <p className="text-sm text-muted-foreground">{t('whyChoose.qualityFleetDesc')}</p>
                     </div>
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
+                    <div className="bg-card rounded-xl p-6 shadow-sm border border-border text-center">
                         <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                             <MapPin className="text-primary" size={24} />
                         </div>
                         <h3 className="font-bold text-foreground mb-2">{t('whyChoose.localExpertise')}</h3>
                         <p className="text-sm text-muted-foreground">{t('whyChoose.localExpertiseDesc')}</p>
                     </div>
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
+                    <div className="bg-card rounded-xl p-6 shadow-sm border border-border text-center">
                         <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                             <Shield className="text-primary" size={24} />
                         </div>
@@ -66,10 +66,10 @@ const About = () => {
                             {t('contact.addressText')}
                         </a>
                         <a href="tel:+251900000000" className="block text-muted-foreground hover:text-primary transition-colors">
-                            {t('contact.phone')}: +251 900 000 000
+                            {t('contact.phone')}: +251 911452860
                         </a>
                         <a href="mailto:info@teddyrental.com" className="block text-muted-foreground hover:text-primary transition-colors">
-                            {t('contact.email')}: info@teddyrental.com
+                            {t('contact.email')}: teddycarrental@gmail.com
                         </a>
                     </div>
                 </div>

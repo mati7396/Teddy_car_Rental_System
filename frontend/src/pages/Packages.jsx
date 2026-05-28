@@ -91,7 +91,7 @@ const Packages = () => {
 
             {/* Date Selection */}
             <div className="container mx-auto px-4 -mt-8 relative z-10">
-                <div className="bg-white rounded-2xl shadow-xl p-6 flex flex-wrap gap-4 items-center justify-center">
+                <div className="bg-card rounded-2xl shadow-xl p-6 flex flex-wrap gap-4 items-center justify-center border border-border">
                     <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none" size={20} />
                         <DatePicker
@@ -105,7 +105,7 @@ const Packages = () => {
                             endDate={endDate}
                             minDate={new Date()}
                             placeholderText={t('search.pickup')}
-                            className="pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-gray-50"
+                            className="pl-12 pr-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-muted/50 text-foreground"
                         />
                     </div>
                     <div className="relative">
@@ -121,11 +121,11 @@ const Packages = () => {
                             endDate={endDate}
                             minDate={startDate || new Date()}
                             placeholderText={t('search.return')}
-                            className="pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-gray-50"
+                            className="pl-12 pr-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-muted/50 text-foreground"
                         />
                     </div>
                     {!startDate || !endDate ? (
-                        <span className="text-sm text-gray-500 ml-2">
+                        <span className="text-sm text-muted-foreground ml-2">
                             <Search className="inline mr-1" size={16} />
                             {t('packagesPage.selectDates')}
                         </span>
@@ -200,9 +200,9 @@ const Packages = () => {
                     </div>
                 ) : (
                     <div className="text-center py-16">
-                        <Package className="mx-auto text-gray-300 mb-4" size={64} />
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{t('packagesPage.noPackages')}</h3>
-                        <p className="text-gray-500 mb-6">{t('packagesPage.noPackagesDesc')}</p>
+                        <Package className="mx-auto text-muted-foreground mb-4" size={64} />
+                        <h3 className="text-xl font-bold text-foreground mb-2">{t('packagesPage.noPackages')}</h3>
+                        <p className="text-muted-foreground mb-6">{t('packagesPage.noPackagesDesc')}</p>
                         <Link
                             to="/"
                             className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors"

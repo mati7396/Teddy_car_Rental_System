@@ -98,20 +98,19 @@ const CustomerProfile = () => {
     return (
         <div className="max-w-3xl mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">My Profile</h1>
+                <h1 className="text-3xl font-bold text-foreground">My Profile</h1>
                 <Button variant="outline" onClick={() => navigate('/security-settings')}>
                     Security Settings
                 </Button>
-
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-card rounded-xl shadow-sm border border-border p-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {bankAccount && (
-                        <div className="mb-6 p-4 border rounded-md bg-gray-50">
-                            <h2 className="text-lg font-semibold mb-2">Bank Account</h2>
+                        <div className="mb-6 p-4 border border-border rounded-md bg-muted/50">
+                            <h2 className="text-lg font-semibold mb-2 text-foreground">Bank Account</h2>
                             <div className="text-sm text-muted-foreground">Account Number: {bankAccount.accountNumber}</div>
-                            <div className="text-sm">Balance: {bankAccount.balance.toLocaleString()} ETB</div>
+                            <div className="text-sm text-foreground">Balance: {bankAccount.balance.toLocaleString()} ETB</div>
                             <div className="mt-2">
                                 <a href="/payments" className="text-primary underline">View payment history & details</a>
                             </div>
@@ -133,51 +132,51 @@ const CustomerProfile = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                            <label className="block text-sm font-medium text-foreground mb-2">First Name</label>
                             <input
                                 type="text"
                                 value={formData.firstName}
                                 onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                                className="w-full p-2 border rounded-md"
+                                className="w-full p-2 border border-border rounded-md bg-background text-foreground"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                            <label className="block text-sm font-medium text-foreground mb-2">Last Name</label>
                             <input
                                 type="text"
                                 value={formData.lastName}
                                 onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                                className="w-full p-2 border rounded-md"
+                                className="w-full p-2 border border-border rounded-md bg-background text-foreground"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <label className="block text-sm font-medium text-foreground mb-2">Email Address</label>
                             <input
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                                className="w-full p-2 border rounded-md"
+                                className="w-full p-2 border border-border rounded-md bg-background text-foreground"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                            <label className="block text-sm font-medium text-foreground mb-2">Phone Number</label>
                             <input
                                 type="tel"
                                 value={formData.phoneNumber}
                                 onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                                className="w-full p-2 border rounded-md"
+                                className="w-full p-2 border border-border rounded-md bg-background text-foreground"
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                            <label className="block text-sm font-medium text-foreground mb-2">Address</label>
                             <input
                                 type="text"
                                 value={formData.address}
                                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                                className="w-full p-2 border rounded-md"
+                                className="w-full p-2 border border-border rounded-md bg-background text-foreground"
                             />
                         </div>
                     </div>

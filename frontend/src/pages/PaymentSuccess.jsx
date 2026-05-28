@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { api } from '@/api';
 import { toast } from 'sonner';
 
 const PaymentSuccess = () => {
@@ -14,9 +13,7 @@ const PaymentSuccess = () => {
 
     useEffect(() => {
         const verify = async () => {
-            const method = (searchParams.get('method') || '').toLowerCase();
             const bookingId = searchParams.get('bookingId') || sessionStorage.getItem('lastBookingId');
-            const txRef = searchParams.get('tx_ref');
 
             if (!bookingId) {
                 setMessage('Booking reference is missing.');
@@ -29,23 +26,8 @@ const PaymentSuccess = () => {
                 if (receiptRaw) {
                     setReceipt(JSON.parse(receiptRaw));
                 }
-                if (method === 'chapa') {
-                    if (!txRef) {
-                        throw new Error('Transaction reference is missing.');
-                    }
-
-                    await api.post('/payment/chapa/verify', {
-                        bookingId,
-                        tx_ref: txRef
-                    });
-                    setSuccess(true);
-                    setMessage('Payment successful! Your booking is now paid.');
-                    toast.success('Chapa payment verified successfully');
-                } else {
-                    // Telebirr flow is verified at pay time in backend; this page is final confirmation.
-                    setSuccess(true);
-                    setMessage('Payment successful! Your booking is now paid.');
-                }
+                setSuccess(true);
+                setMessage('Payment successful! Your booking is now paid.');
             } catch (error) {
                 console.error('Payment verification error:', error);
                 setSuccess(false);

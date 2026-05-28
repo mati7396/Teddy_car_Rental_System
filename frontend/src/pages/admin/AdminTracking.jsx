@@ -109,6 +109,7 @@ const parseLocation = (locationStr, fallbackOffset = 0) => {
 };
 
 // Generate curved routes from start to end
+// The "shortcut" route (index 1) uses stagger -1.8, 1.8 — MUST match gps-simulator.js exactly
 const generateRoutes = (start, end) => {
     if (!start || !end) return [];
     const [lat1, lng1] = start;
@@ -123,11 +124,36 @@ const generateRoutes = (start, end) => {
             lat1 + (lat2 - lat1) * 0.7 - staggerLat * 0.002,
             lng1 + (lng2 - lng1) * 0.65 + staggerLng * 0.002
         ];
-        return {
-            label,
-            type,
-            path: [start, mid1, mid2, end]
-        };
+
+        // Generate 60-point interpolated path matching the simulator exactly
+        const segments = 60;
+        const path = [];
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            let pt;
+            if (t < 0.33) {
+                const localT = t / 0.33;
+                pt = [
+                    lat1 + (mid1[0] - lat1) * localT,
+                    lng1 + (mid1[1] - lng1) * localT
+                ];
+            } else if (t < 0.66) {
+                const localT = (t - 0.33) / 0.33;
+                pt = [
+                    mid1[0] + (mid2[0] - mid1[0]) * localT,
+                    mid1[1] + (mid2[1] - mid1[1]) * localT
+                ];
+            } else {
+                const localT = (t - 0.66) / 0.34;
+                pt = [
+                    mid2[0] + (end[0] - mid2[0]) * localT,
+                    mid2[1] + (end[1] - mid2[1]) * localT
+                ];
+            }
+            path.push(pt);
+        }
+
+        return { label, type, path };
     };
 
     return [
@@ -147,6 +173,12 @@ const AdminTracking = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [activeRouteIndex, setActiveRouteIndex] = useState(1); // Default to shortcut!
+
+    // Always use this to select a vehicle — resets route index so the new car's map is clean
+    const handleSelectVehicle = (v) => {
+        setSelectedVehicle(v ? (vehicles[v.vehicleId] || v) : null);
+        setActiveRouteIndex(1); // reset to shortcut route for every new selection
+    };
     const evtSourceRef = useRef(null);
 
     useEffect(() => {
@@ -155,25 +187,25 @@ const AdminTracking = () => {
                 const res = await api.get('/tracking/active-vehicles');
                 if (res && res.data && res.data.length > 0) {
                     const initialVehicles = {};
-                    res.data.forEach(v => {
+                    res.data.forEach((v, idx) => {
+                        // Give each vehicle a unique starting offset from the garage
+                        // matching the simulator's hash-based offset
+                        let hash = 0;
+                        for (let i = 0; i < v.vehicleId.length; i++) {
+                            hash = v.vehicleId.charCodeAt(i) + ((hash << 5) - hash);
+                        }
+                        const garageOffsetLat = (Math.abs(hash % 50) / 50000) - 0.0005;
+                        const garageOffsetLon = (Math.abs((hash >> 8) % 50) / 50000) - 0.0005;
                         initialVehicles[v.vehicleId] = {
                             ...v,
-                            lat: 9.0035, // default to office garage coordinates
-                            lng: 38.7825,
+                            lat: 9.0035 + garageOffsetLat,
+                            lng: 38.7825 + garageOffsetLon,
                             speed: 0,
                             lastUpdate: 'No signal yet'
                         };
                     });
                     setVehicles(initialVehicles);
-                    // Automatically select the first vehicle so we display the detailed simulation map by default!
-                    const firstVehicle = res.data[0];
-                    setSelectedVehicle({
-                        ...firstVehicle,
-                        lat: 9.0035,
-                        lng: 38.7825,
-                        speed: 0,
-                        lastUpdate: 'No signal yet'
-                    });
+                    // Do NOT auto-select — let user click the vehicle they want
                 }
             } catch (err) {
                 console.error('Failed to fetch active vehicles:', err);
@@ -264,12 +296,11 @@ const AdminTracking = () => {
         };
     }, []);
 
-    // Reverse-geocode vehicle coordinates to get a readable address (cached per vehicle)
+    // Reverse-geocode vehicle coordinates to get a readable address (updates as car moves)
     useEffect(() => {
         const vehicleArray = Object.values(vehicles);
         vehicleArray.forEach(v => {
             if (!v || !v.lat || !v.lng) return;
-            if (addresses[v.vehicleId]) return; // already cached
 
             const fetchAddress = async () => {
                 try {
@@ -280,18 +311,27 @@ const AdminTracking = () => {
                     const display = j.display_name || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`;
                     setAddresses(prev => ({ ...prev, [v.vehicleId]: display }));
                 } catch (err) {
-                    // fallback to coordinates
                     setAddresses(prev => ({ ...prev, [v.vehicleId]: `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}` }));
                 }
             };
 
-            // debounce small bursts
-            setTimeout(fetchAddress, 200);
+            setTimeout(fetchAddress, 300);
         });
     }, [vehicles]);
 
-    const vehicleList = Object.values(vehicles);
+    const vehicleList = Object.values(vehicles).filter(v => v.assignedDriver && v.assignedDriver !== 'No driver assigned' && v.assignedDriver !== 'N/A');
     const center = [9.0227, 38.7460]; // Default Addis Ababa center
+
+    // FlyTo component — flies the map to a specific position when selectedVehicle changes
+    const FlyToVehicle = ({ position }) => {
+        const map = useMap();
+        useEffect(() => {
+            if (position) {
+                map.flyTo(position, 15, { duration: 1.2 });
+            }
+        }, [position, map]);
+        return null;
+    };
 
     return (
         <LayoutComponent>
@@ -340,7 +380,7 @@ const AdminTracking = () => {
                                     vehicleList.map(v => (
                                         <button
                                             key={v.vehicleId}
-                                            onClick={() => setSelectedVehicle(v)}
+                                            onClick={() => handleSelectVehicle(v)}
                                             className={`w-full p-3 rounded-lg text-left transition-all border ${
                                                 selectedVehicle?.vehicleId === v.vehicleId 
                                                 ? 'bg-primary/10 border-primary/30 ring-1 ring-primary/20' 
@@ -349,22 +389,24 @@ const AdminTracking = () => {
                                         >
                                             <div className="flex justify-between items-start mb-1">
                                                 <span className="font-bold text-sm truncate">{v.vehicleId}</span>
-                                                <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0">
-                                                    {v.speed} km/h
+                                                <Badge variant="outline" className={`text-[10px] h-4 px-1 shrink-0 ${v.speed > 0 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500'}`}>
+                                                    {v.speed > 0 ? `${v.speed} km/h` : 'Stopped'}
                                                 </Badge>
                                             </div>
-                                            <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                                                    <div className="flex items-center gap-1">
-                                                        <Navigation size={10} className="rotate-45 text-primary" />
-                                                        <span className="text-xs text-muted-foreground">{v.lat.toFixed(4)}, {v.lng.toFixed(4)}</span>
-                                                    </div>
+                                            <div className="text-[10px] text-muted-foreground font-semibold truncate mb-0.5">
+                                                {v.isDelivery && v.deliveryStatus === 'DELIVERED' ? '👤 Renter' : '🚗 Driver'}: <span className="text-foreground">{v.assignedDriver || 'N/A'}</span>
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground truncate">
+                                                📍 {addresses[v.vehicleId] || `${v.lat?.toFixed(4)}, ${v.lng?.toFixed(4)}`}
+                                            </div>
+                                            <div className="flex justify-between items-center mt-1">
+                                                <p className="text-[9px] text-muted-foreground">Updated: {v.lastUpdate}</p>
                                                 {v.isDelivery && (
                                                     <Badge variant="secondary" className="text-[8px] h-3.5 px-1 bg-amber-500/10 text-amber-600 border-none shrink-0 font-bold">
-                                                        Delivery
+                                                        {v.deliveryStatus?.replace(/_/g, ' ') || 'Delivery'}
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-[10px] text-muted-foreground mt-1">Last update: {v.lastUpdate}</p>
                                         </button>
                                     ))
                                 )}
@@ -428,15 +470,18 @@ const AdminTracking = () => {
                                             </Marker>
                                         )}
 
-                                        {/* All active moving vehicles with Clickable Popups showing driver name and plate number */}
-                                        {vehicleList.map(v => (
+                                        {/* All active moving vehicles */}
+                                        {vehicleList.map((v) => {
+                                            const vehicleId = v.vehicleId;
+                                            return (
                                             <Marker 
-                                                key={v.vehicleId} 
+                                                key={vehicleId} 
                                                 position={[v.lat, v.lng]} 
                                                 icon={carIcon}
+                                                zIndexOffset={selectedVehicle?.vehicleId === vehicleId ? 1000 : 0}
                                                 eventHandlers={{
                                                     click: () => {
-                                                        setSelectedVehicle(v);
+                                                        handleSelectVehicle(vehicles[vehicleId]);
                                                     }
                                                 }}
                                             >
@@ -444,21 +489,27 @@ const AdminTracking = () => {
                                                     <div className="p-2 space-y-1.5 min-w-[160px]">
                                                         <p className="font-bold text-xs text-primary border-b border-primary/20 pb-1">Plate: {v.vehicleId}</p>
                                                         <p className="text-[10px] font-bold text-foreground leading-tight">{v.isDelivery && v.deliveryStatus === 'DELIVERED' ? 'Renter' : 'Driver'}: <span className="text-indigo-600 font-black">{v.assignedDriver}</span></p>
-                                                        <p className="text-[9px] font-semibold text-muted-foreground">Speed: {v.speed} km/h</p>
-                                                        <p className="text-[10px] text-muted-foreground">Address: <span className="font-semibold text-foreground">{addresses[v.vehicleId] || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`}</span></p>
+                                                        <p className="text-[9px] font-semibold text-muted-foreground">Speed: {v.speed > 0 ? `${v.speed} km/h` : 'Stopped'}</p>
+                                                        <p className="text-[10px] text-muted-foreground">Address: <span className="font-semibold text-foreground">{addresses[vehicleId] || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`}</span></p>
                                                         {v.isDelivery && (
                                                             <div className={`text-[8px] font-black px-1 py-0.5 rounded w-max mt-1 ${
                                                                 v.deliveryStatus === 'DELIVERED'
                                                                 ? 'text-blue-600 bg-blue-500/10 border border-blue-500/20'
                                                                 : 'text-green-600 bg-green-500/10 border border-green-500/20 animate-pulse'
                                                             }`}>
-                                                                {v.deliveryStatus === 'DELIVERED' ? 'DELIVERED TO CUSTOMER' : 'DELIVERY ACTIVE'}
+                                                                {v.deliveryStatus === 'DELIVERED' ? 'DELIVERED TO CUSTOMER' : `DELIVERY: ${v.deliveryStatus?.replace(/_/g, ' ')}`}
                                                             </div>
                                                         )}
                                                     </div>
                                                 </Popup>
                                             </Marker>
-                                        ))}
+                                            );
+                                        })}
+
+                                        {/* Fly to selected vehicle */}
+                                        {selectedVehicle && (
+                                            <FlyToVehicle position={[selectedVehicle.lat, selectedVehicle.lng]} />
+                                        )}
 
                                         {/* Render Routes */}
                                         {generateRoutes(
@@ -493,7 +544,7 @@ const AdminTracking = () => {
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
                                             <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Smart Route & Telemetry</p>
-                                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-muted-foreground" onClick={() => setSelectedVehicle(null)}>
+                                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-muted-foreground" onClick={() => handleSelectVehicle(null)}>
                                                 Clear View
                                             </Button>
                                         </div>
@@ -580,13 +631,16 @@ const AdminTracking = () => {
                                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                     />
                                     
-                                    {vehicleList.map(v => (
+                                    {vehicleList.map((v) => {
+                                        const vehicleId = v.vehicleId;
+                                        return (
                                         <Marker 
-                                            key={v.vehicleId} 
+                                            key={vehicleId} 
                                             position={[v.lat, v.lng]} 
                                             icon={carIcon}
+                                            zIndexOffset={selectedVehicle?.vehicleId === vehicleId ? 1000 : 0}
                                             eventHandlers={{
-                                                click: () => setSelectedVehicle(v)
+                                                click: () => handleSelectVehicle(vehicles[vehicleId])
                                             }}
                                         >
                                             <Popup className="custom-popup">
@@ -602,18 +656,20 @@ const AdminTracking = () => {
                                                         </div>
                                                         <div className="flex justify-between">
                                                             <span className="text-muted-foreground">Speed:</span>
-                                                            <span className="font-semibold text-primary">{v.speed} km/h</span>
+                                                            <span className="font-semibold text-primary">{v.speed > 0 ? `${v.speed} km/h` : 'Stopped'}</span>
                                                         </div>
-                                                        <div className="text-muted-foreground">Address: <span className="font-semibold text-foreground">{addresses[v.vehicleId] || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`}</span></div>
+                                                        <div className="text-muted-foreground">Address: <span className="font-semibold text-foreground">{addresses[vehicleId] || `${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`}</span></div>
                                                     </div>
                                                     <p className="text-[10px] text-muted-foreground border-t pt-1 mt-1 italic">Updating in real-time...</p>
                                                 </div>
                                             </Popup>
                                         </Marker>
-                                    ))}
+                                        );
+                                    })}
 
+                                    {/* Fly to selected vehicle when clicked from sidebar */}
                                     {selectedVehicle && (
-                                        <RecenterMap positions={[selectedVehicle]} />
+                                        <FlyToVehicle position={[selectedVehicle.lat, selectedVehicle.lng]} />
                                     )}
                                     {!selectedVehicle && vehicleList.length > 0 && (
                                         <RecenterMap positions={vehicleList} />

@@ -24,6 +24,7 @@ model User {
   bankAccount          BankAccount?
   bankTransactions     BankTransaction[]
   notifications        Notification[]
+  contactMessages      ContactMessage[]
 }
 
 model CustomerProfile {
@@ -44,6 +45,7 @@ model CustomerProfile {
 
 model Car {
   id           Int           @id @default(autoincrement())
+  color        string
   make         String
   model        String
   year         Int
@@ -194,6 +196,28 @@ model HomeContent {
   order       Int     @default(0)
   isActive    Boolean @default(true)
   language    String  @default("en")
+}
+
+model ContactMessage {
+  id        Int            @id @default(autoincrement())
+  userId    Int?
+  name      String
+  email     String
+  message   String
+  isRead    Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  replies   ContactReply[]
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model ContactReply {
+  id               Int            @id @default(autoincrement())
+  contactMessageId Int
+  senderName       String
+  senderRole       String         @default("ADMIN")
+  body             String
+  createdAt        DateTime       @default(now())
+  contactMessage   ContactMessage @relation(fields: [contactMessageId], references: [id], onDelete: Cascade)
 }
 
 enum Role {

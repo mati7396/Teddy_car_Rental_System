@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import {
-    LayoutDashboard, Car, Users, Package, FileText, Menu, Bell, LogOut, Search, User, DollarSign, Navigation
+    LayoutDashboard, Car, Users, Package, FileText, Menu, Bell, LogOut, Search, User, DollarSign, Navigation, MessageSquare
 } from 'lucide-react';
 
 // Shadcn Components
@@ -107,6 +107,7 @@ const AdminLayout = ({ children }) => {
         { path: '/admin/drivers', icon: Navigation, label: 'Driver Management' },
         { path: '/admin/packages', icon: Package, label: 'Rental Packages' },
         { path: '/admin/financials', icon: DollarSign, label: 'Financials' },
+        { path: '/admin/messages', icon: MessageSquare, label: 'Messages' },
     ];
 
     return (
@@ -218,6 +219,7 @@ const AdminLayout = ({ children }) => {
 
                                                     if (notif.category === 'Payment' || notif.category === 'Refund') await openPaymentFromNotification(notif);
                                                     else if (notif.category === 'Maintenance') navigate('/admin/cars');
+                                                    else if (notif.category === 'Contact') navigate('/admin/messages');
                                                     else navigate('/admin/dashboard');
                                                 }}
                                             >

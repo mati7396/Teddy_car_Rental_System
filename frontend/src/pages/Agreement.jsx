@@ -200,32 +200,32 @@ const Agreement = () => {
     };
 
     if (authLoading) {
-        return <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        return <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>;
     }
 
     return (
-        <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
-                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{t('booking.rentalAgreement')}</h2>
-                <p className="mt-3 text-lg text-gray-500">
+                <h2 className="text-3xl font-extrabold text-foreground tracking-tight">{t('booking.rentalAgreement')}</h2>
+                <p className="mt-3 text-lg text-muted-foreground">
                     {t('booking.reviewSign')}
                 </p>
             </div>
 
-            <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+            <div className="bg-card shadow-xl rounded-2xl overflow-hidden border border-border">
                 {/* Document Header */}
-                <div className="px-8 py-5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <div className="px-8 py-5 bg-muted/50 border-b border-border flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <FileText className="text-primary" size={24} />
-                        <span className="font-bold text-gray-900 uppercase tracking-wide">{t('booking.standardContract')}</span>
+                        <span className="font-bold text-foreground uppercase tracking-wide">{t('booking.standardContract')}</span>
                     </div>
-                    <span className="text-xs font-mono text-gray-400">REF-89302-2024</span>
+                    <span className="text-xs font-mono text-muted-foreground">REF-89302-2024</span>
                 </div>
 
-                {/* Agreement Text - Contrast: Paper-like feel */}
-                <div className="px-8 py-8 h-[400px] overflow-y-auto text-sm text-gray-700 leading-relaxed font-sans bg-white">
+                {/* Agreement Text */}
+                <div className="px-8 py-8 h-[400px] overflow-y-auto text-sm text-foreground leading-relaxed font-sans bg-card">
                     <h3 className="font-bold text-xl mb-6 text-center underline decoration-primary decoration-2 underline-offset-4">{t('termsPage.title')}</h3>
 
                     <div className="space-y-4 max-w-3xl mx-auto">
@@ -238,49 +238,23 @@ const Agreement = () => {
                         <p><strong>{t('termsPage.s7Title')}:</strong> {t('termsPage.s7Desc')}</p>
                         <p><strong>{t('termsPage.s8Title')}:</strong> {t('termsPage.s8Desc')}</p>
 
-                        <div className="pt-6 border-t border-dashed border-gray-200">
-                            <h4 className="font-bold text-lg">Late Return Penalty</h4>
-                            <p className="text-sm text-gray-600 mt-2">
-                                If the vehicle is returned after the exact agreed return date/time, a late return penalty will be charged.
-                                We allow a 2-hour grace period after the agreed return time. After the grace period, a penalty of one day's rate per day (or part thereof) applies.
-                            </p>
-
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                                <div>
-                                    <label className="text-xs text-gray-500">Expected Return (agreed)</label>
-                                    <input type="datetime-local" className="w-full p-2 border rounded" value={expectedReturn} onChange={(e) => setExpectedReturn(e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-gray-500">Actual Return (you)</label>
-                                    <input type="datetime-local" className="w-full p-2 border rounded" value={actualReturn} onChange={(e) => setActualReturn(e.target.value)} />
-                                </div>
-                                <div>
-                                    <div className="text-xs text-gray-500">Estimated Penalty</div>
-                                    <div className="mt-1 font-semibold text-lg">{estimatedPenalty ? `${Number(estimatedPenalty).toLocaleString()} ETB` : 'No penalty'}</div>
-                                    {carInfo?.dailyRate && (
-                                        <div className="text-xs text-muted-foreground">(Daily Rate: {Number(carInfo.dailyRate).toLocaleString()} ETB)</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <p className="pt-6 font-bold">Signed this day, <span className="underline">{new Date().toLocaleDateString()}</span>.</p>
+                        <p className="pt-6 font-bold text-foreground">Signed this day, <span className="underline">{new Date().toLocaleDateString()}</span>.</p>
                     </div>
                 </div>
 
-                {/* Signature Section - Alignment: Grid based */}
-                <div className="px-8 py-8 bg-gray-50 border-t border-gray-200">
+                {/* Signature Section */}
+                <div className="px-8 py-8 bg-muted/30 border-t border-border">
                     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
 
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <label htmlFor="signature" className="block text-sm font-bold text-gray-900 mb-3">
+                        <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+                            <label htmlFor="signature" className="block text-sm font-bold text-foreground mb-3">
                                 {t('booking.digitalSignature')}
                             </label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     id="signature"
-                                    className="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl shadow-inner focus:ring-4 focus:ring-primary/20 focus:border-primary font-script text-2xl text-gray-800 placeholder-gray-300 outline-none transition-all"
+                                    className="block w-full pl-12 pr-4 py-4 border border-border rounded-xl shadow-inner focus:ring-4 focus:ring-primary/20 focus:border-primary text-2xl text-foreground placeholder-muted-foreground outline-none transition-all bg-background"
                                     placeholder={t('booking.signHere')}
                                     value={signature}
                                     onChange={(e) => setSignature(e.target.value)}
@@ -290,26 +264,26 @@ const Agreement = () => {
                                     <PenTool size={20} />
                                 </div>
                             </div>
-                            <p className="mt-2 text-xs text-gray-400">{t('booking.consentElectronic')}</p>
+                            <p className="mt-2 text-xs text-muted-foreground">{t('booking.consentElectronic')}</p>
                         </div>
 
-                        <div className="flex items-start bg-white p-4 rounded-xl border border-gray-200">
+                        <div className="flex items-start bg-card p-4 rounded-xl border border-border">
                             <div className="flex items-center h-5">
                                 <input
                                     id="agree"
                                     name="agree"
                                     type="checkbox"
-                                    className="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded cursor-pointer"
+                                    className="h-5 w-5 text-primary focus:ring-primary border-border rounded cursor-pointer"
                                     checked={agreed}
                                     onChange={(e) => setAgreed(e.target.checked)}
                                     required
                                 />
                             </div>
                             <div className="ml-3 text-sm">
-                                <label htmlFor="agree" className="font-medium text-gray-900 cursor-pointer">
+                                <label htmlFor="agree" className="font-medium text-foreground cursor-pointer">
                                     {t('booking.iAgree')}
                                 </label>
-                                <p className="text-gray-500">{t('booking.confirmAge')}</p>
+                                <p className="text-muted-foreground">{t('booking.confirmAge')}</p>
                             </div>
                         </div>
 

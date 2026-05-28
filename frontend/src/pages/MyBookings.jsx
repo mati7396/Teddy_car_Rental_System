@@ -243,118 +243,109 @@ const MyBookings = () => {
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid gap-6">
+                    <div className="grid gap-4">
                         {bookings.map((booking) => (
                             <div
                                 key={booking.id}
-                                className="group bg-white rounded-3xl border border-gray-100 p-1 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 overflow-hidden"
+                                className="group bg-card rounded-2xl border border-border hover:border-primary/20 hover:shadow-lg transition-all duration-300 overflow-hidden"
                             >
-                                <div className="p-5 sm:p-7 flex flex-col lg:flex-row lg:items-center gap-8">
+                                <div className="flex items-center gap-5 p-5">
                                     {/* Car Image/Icon */}
-                                    <div className="relative w-full lg:w-48 h-32 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                                    <div className="relative w-36 h-28 rounded-xl bg-muted flex items-center justify-center overflow-hidden shrink-0">
                                         {booking.package ? (
-                                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex flex-col items-center justify-center p-4">
-                                                <Package size={32} className="text-primary mb-2" />
-                                                <span className="text-xs font-bold text-primary text-center">{booking.package.name}</span>
+                                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex flex-col items-center justify-center p-3">
+                                                <Package size={30} className="text-primary mb-1" />
+                                                <span className="text-xs font-bold text-primary text-center leading-tight">{booking.package.name}</span>
                                             </div>
                                         ) : booking.car?.imageUrl ? (
                                             <img
                                                 src={api.getImageUrl(booking.car.imageUrl)}
                                                 alt={booking.car.model}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             />
                                         ) : (
-                                            <Car size={40} className="text-gray-200" />
+                                            <Car size={36} className="text-muted-foreground" />
                                         )}
-                                        <div className="absolute top-3 left-3">
+                                        <div className="absolute top-2 left-2">
                                             <StatusBadge status={booking.status} />
                                         </div>
                                     </div>
 
-                                    {/* Booking Details */}
-                                    <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-center">
-                                        <div>
-                                            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                                                {t('booking.reference')}
+                                    {/* Details row */}
+                                    <div className="flex-1 flex items-center gap-6 min-w-0">
+
+                                        {/* Reference */}
+                                        <div className="shrink-0">
+                                            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">{t('booking.reference')}</p>
+                                            <p className="text-base font-mono font-bold text-foreground">#BK-{booking.id.toString().padStart(5, '0')}</p>
+                                        </div>
+
+                                        <div className="w-px h-10 bg-border shrink-0" />
+
+                                        {/* Vehicle */}
+                                        <div className="shrink-0 min-w-0">
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t('booking.vehicle')}</p>
+                                            <p className="text-base font-bold text-foreground truncate max-w-[140px]">
+                                                {booking.package ? booking.package.name : `${booking.car?.make} ${booking.car?.model}`}
                                             </p>
-                                            <h4 className="text-lg font-mono font-bold text-gray-900">#BK-{booking.id.toString().padStart(5, '0')}</h4>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                {booking.package ? `${booking.package.category} Package` : booking.car?.plateNumber}
+                                            </p>
                                         </div>
 
-                                        <div>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">{t('booking.vehicle')}</p>
-                                            <h4 className="text-base font-bold text-gray-900 truncate">
-                                                {booking.package ? (
-                                                    <>
-                                                        <span className="text-primary">{booking.package.name}</span>
-                                                        <span className="block text-xs font-medium text-gray-400 mt-0.5">{t(`search.${booking.package.category.toLowerCase()}`)} Package</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        {booking.car?.make} {booking.car?.model}
-                                                        <span className="block text-xs font-medium text-gray-400 mt-0.5">{booking.car?.plateNumber}</span>
-                                                    </>
-                                                )}
-                                            </h4>
+                                        <div className="w-px h-10 bg-border shrink-0" />
+
+                                        {/* Rental Period */}
+                                        <div className="shrink-0">
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t('booking.rentalPeriod')}</p>
+                                            <p className="text-sm font-semibold text-foreground whitespace-nowrap">
+                                                {new Date(booking.startDate).toLocaleDateString()} → {new Date(booking.endDate).toLocaleDateString()}
+                                            </p>
+                                            {booking.actualReturnDate && (
+                                                <p className="text-xs text-red-500 mt-0.5">Returned: {new Date(booking.actualReturnDate).toLocaleDateString()}</p>
+                                            )}
                                         </div>
 
-                                        <div>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">{t('booking.rentalPeriod')}</p>
-                                            <div className="flex items-center gap-2 text-gray-900 font-semibold text-sm">
-                                                <Calendar size={14} className="text-primary" />
-                                                <span>{new Date(booking.startDate).toLocaleDateString()}</span>
-                                                <ChevronRight size={12} className="text-gray-300" />
-                                                <span>{new Date(booking.endDate).toLocaleDateString()}</span>
-                                                {booking.actualReturnDate && (
-                                                    <span className="text-[10px] text-red-500 block">
-                                                        Returned: {new Date(booking.actualReturnDate).toLocaleDateString()}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <div className="w-px h-10 bg-border shrink-0" />
 
-                                        <div>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">{t('booking.totalAmount')}</p>
-                                            <h4 className="text-lg font-black text-gray-900">
-                                                {booking.totalAmount?.toLocaleString()} <span className="text-xs font-bold text-gray-400">ETB</span>
-                                            </h4>
+                                        {/* Total */}
+                                        <div className="shrink-0">
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t('booking.totalAmount')}</p>
+                                            <p className="text-base font-black text-foreground whitespace-nowrap">
+                                                {booking.totalAmount?.toLocaleString()} <span className="text-xs font-bold text-muted-foreground">ETB</span>
+                                            </p>
                                         </div>
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center gap-3 lg:border-l lg:border-gray-50 lg:pl-8 shrink-0">
+                                    <div className="flex items-center gap-2 shrink-0 border-l border-border pl-5">
                                         {booking.status === 'VERIFIED' && !booking.payment && (
                                             <Button
                                                 onClick={() => navigate(`/payment?carId=${booking.carId || ''}&packageId=${booking.packageId || ''}&bookingId=${booking.id}`)}
-                                                className="w-full lg:w-auto rounded-xl shadow-lg bg-green-600 hover:bg-green-700 text-white transition-all font-bold px-6"
+                                                className="rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm px-4 py-2 h-auto"
                                             >
-                                                Continue to Payment
+                                                Pay Now
                                             </Button>
                                         )}
                                         {booking.status === 'VERIFIED' && booking.payment && (
-                                            <Button
-                                                variant="outline"
-                                                disabled
-                                                className="w-full lg:w-auto rounded-xl font-bold px-6"
-                                            >
-                                                Payment Pending Verification
+                                            <Button variant="outline" disabled className="rounded-xl font-bold text-sm px-4 py-2 h-auto">
+                                                Pending
                                             </Button>
                                         )}
                                         {booking.status === 'PENDING' && (
                                             <Button
                                                 onClick={() => navigate(`/pending-verification?bookingId=${booking.id}`)}
                                                 variant="outline"
-                                                className="w-full lg:w-auto rounded-xl font-bold px-6"
+                                                className="rounded-xl font-bold text-sm px-4 py-2 h-auto"
                                             >
                                                 Check Status
                                             </Button>
                                         )}
                                         <Button
                                             onClick={() => openDetails(booking)}
-                                            className="w-full lg:w-32 rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/30 transition-all font-bold group/btn"
+                                            className="rounded-xl font-bold text-sm px-4 py-2 h-auto"
                                         >
                                             {t('booking.details')}
-                                            <ChevronRight size={16} className="ml-1 group-hover/btn:translate-x-1 transition-transform" />
                                         </Button>
                                     </div>
                                 </div>

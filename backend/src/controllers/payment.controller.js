@@ -149,15 +149,15 @@ const payWithLocalBank = async (req, res) => {
                 data: [
                     {
                         recipientRole: 'EMPLOYEE',
-                        message: `New payment received: ${totalCharge.toLocaleString()} ETB`
+                        message: `New payment received: ${totalCharge.toLocaleString()} ETB for Booking #${bookingIdInt}`
                     },
                     {
                         recipientRole: 'ADMIN',
-                        message: `New payment received: ${totalCharge.toLocaleString()} ETB`
+                        message: `New payment received: ${totalCharge.toLocaleString()} ETB for Booking #${bookingIdInt}`
                     },
                     {
                         userId,
-                        message: `Payment successful. Amount: ${totalCharge.toLocaleString()} ETB`
+                        message: `Payment successful for Booking #${bookingIdInt}. Amount: ${totalCharge.toLocaleString()} ETB`
                     }
                 ]
             });
@@ -206,7 +206,12 @@ const getLocalBankTransactions = async (req, res) => {
         const rows = await prisma.bankTransaction.findMany({
             where: { userId },
             include: {
-                booking: true,
+                booking: {
+                    include: {
+                        car: true,
+                        package: true
+                    }
+                },
                 account: true
             },
             orderBy: { createdAt: 'desc' }
@@ -222,7 +227,26 @@ const getLocalBankTransactions = async (req, res) => {
             description: tx.description,
             counterparty: tx.counterparty,
             date: tx.createdAt,
-            accountNumber: tx.account?.accountNumber || null
+            accountNumber: tx.account?.accountNumber || null,
+            booking: tx.booking ? {
+                id: tx.booking.id,
+                startDate: tx.booking.startDate,
+                endDate: tx.booking.endDate,
+                status: tx.booking.status,
+                totalAmount: Number(tx.booking.totalAmount || 0),
+                car: tx.booking.car ? {
+                    make: tx.booking.car.make,
+                    model: tx.booking.car.model,
+                    year: tx.booking.car.year,
+                    plateNumber: tx.booking.car.plateNumber,
+                    category: tx.booking.car.category
+                } : null,
+                package: tx.booking.package ? {
+                    name: tx.booking.package.name,
+                    category: tx.booking.package.category,
+                    period: tx.booking.package.period
+                } : null
+            } : null
         }));
 
         res.json(txs);

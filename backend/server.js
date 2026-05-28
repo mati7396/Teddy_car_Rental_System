@@ -17,6 +17,7 @@ const uploadRoutes = require('./src/routes/upload.routes');
 const paymentRoutes = require('./src/routes/payment.routes');
 const trackingRoutes = require('./src/routes/tracking.routes');
 const driverRoutes = require('./src/routes/driver.routes');
+const contactRoutes = require('./src/routes/contact.routes');
 const { startScheduler } = require('./src/utils/scheduler');
 
 
@@ -50,6 +51,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/drivers', driverRoutes);
+app.use('/api/contact', contactRoutes);
 
 
 app.get('/', (req, res) => {

@@ -1,9 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '@/api';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const Contact = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { user, isAuthenticated } = useAuth();
+
+    const [form, setForm] = useState({
+        name: user?.profile ? `${user.profile.firstName} ${user.profile.lastName}`.trim() : '',
+        email: user?.email || '',
+        message: ''
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleChange = (e) => {
+        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+            toast.error('Please fill in all fields.');
+            return;
+        }
+        setSubmitting(true);
+        try {
+            await api.post('/contact', form);
+            toast.success('Message sent! We will get back to you soon.');
+            if (isAuthenticated && user?.role === 'CUSTOMER') {
+                navigate('/my-messages');
+            } else {
+                setForm(prev => ({ ...prev, message: '' }));
+            }
+        } catch (error) {
+            toast.error(error.message || 'Failed to send message. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background py-16">
@@ -31,7 +70,7 @@ const Contact = () => {
                             </div>
                             <div>
                                 <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{t('contact.phone')}</h3>
-                                <p className="text-muted-foreground group-hover:text-foreground transition-colors">+251 900 000 000</p>
+                                <p className="text-muted-foreground group-hover:text-foreground transition-colors">+251 911452860</p>
                             </div>
                         </a>
                         <a href="mailto:info@teddyrental.com" className="flex items-start gap-4 group hover:opacity-90 transition-opacity">
@@ -40,7 +79,7 @@ const Contact = () => {
                             </div>
                             <div>
                                 <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">{t('contact.email')}</h3>
-                                <p className="text-muted-foreground group-hover:text-foreground transition-colors">info@teddyrental.com</p>
+                                <p className="text-muted-foreground group-hover:text-foreground transition-colors">teddycarrental@gmail.com</p>
                             </div>
                         </a>
                         <div className="flex items-start gap-4">
@@ -58,21 +97,47 @@ const Contact = () => {
                     {/* Contact Form */}
                     <div className="bg-card rounded-2xl p-8 shadow-sm border border-border">
                         <h2 className="text-xl font-bold text-foreground mb-6">{t('contactPage.formTitle')}</h2>
-                        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert(t('contact.subtitle')); }}>
+                        <form className="space-y-4" onSubmit={handleSubmit}>
                             <div>
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">{t('contactPage.name')}</label>
-                                <input type="text" required className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-muted/20 text-foreground" />
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={form.name}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-muted/20 text-foreground"
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">{t('contactPage.email')}</label>
-                                <input type="email" required className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-muted/20 text-foreground" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-muted/20 text-foreground"
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">{t('contactPage.message')}</label>
-                                <textarea rows={4} required className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none bg-muted/20 text-foreground" />
+                                <textarea
+                                    name="message"
+                                    value={form.message}
+                                    onChange={handleChange}
+                                    rows={4}
+                                    required
+                                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none bg-muted/20 text-foreground"
+                                />
                             </div>
-                            <button type="submit" className="w-full bg-primary text-white py-2.5 rounded-lg font-bold hover:opacity-90 transition-opacity">
-                                {t('contactPage.send')}
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="w-full bg-primary text-white py-2.5 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+                            >
+                                {submitting && <Loader2 size={16} className="animate-spin" />}
+                                {submitting ? 'Sending...' : t('contactPage.send')}
                             </button>
                         </form>
                     </div>

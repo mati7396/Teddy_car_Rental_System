@@ -216,6 +216,7 @@ const getNotifications = async (req, res) => {
             else if (msg.includes('payment') || msg.includes('paid') || msg.includes('receipt')) category = 'Payment';
             else if (msg.includes('maintenance') || msg.includes('service')) category = 'Maintenance';
             else if (msg.includes('booking') || msg.includes('request') || msg.includes('rental')) category = 'Booking';
+            else if (msg.includes('contact message') || msg.includes('contact') || msg.includes('message from')) category = 'Contact';
 
             notifications.push({
                 id: `db-${n.id}`,
@@ -296,6 +297,7 @@ const getMyNotifications = async (req, res) => {
             else if (msg.includes('payment') || msg.includes('paid') || msg.includes('receipt')) category = 'Payment';
             else if (msg.includes('maintenance') || msg.includes('service')) category = 'Maintenance';
             else if (msg.includes('booking') || msg.includes('request') || msg.includes('rental')) category = 'Booking';
+            else if (msg.includes('support replied') || msg.includes('contact') || msg.includes('message from')) category = 'Contact';
 
             return {
                 id: n.id,

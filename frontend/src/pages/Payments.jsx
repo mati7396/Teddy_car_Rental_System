@@ -42,49 +42,51 @@ const Payments = () => {
                 <h1 className="text-2xl font-bold">Payment History</h1>
             </div>
 
-            <div className="bg-white border rounded shadow-sm">
+            <div className="bg-card border border-border rounded-xl shadow-sm">
                 {bankAccount && (
-                    <div className="p-4 border-b">
+                    <div className="p-4 border-b border-border">
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="text-sm text-muted-foreground">Account Number</div>
-                                <div className="font-medium">{bankAccount.accountNumber}</div>
+                                <div className="font-medium text-foreground">{bankAccount.accountNumber}</div>
                             </div>
                             <div className="text-right">
                                 <div className="text-sm text-muted-foreground">Current Balance</div>
-                                <div className="font-medium text-lg">{Number(bankAccount.balance).toLocaleString()} ETB</div>
+                                <div className="font-medium text-lg text-foreground">{Number(bankAccount.balance).toLocaleString()} ETB</div>
                             </div>
                         </div>
                     </div>
                 )}
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="p-3 text-left">Date</th>
-                            <th className="p-3 text-left">Type</th>
-                            <th className="p-3 text-right">Amount (ETB)</th>
-                            <th className="p-3 text-right">Balance After</th>
-                            <th className="p-3 text-left">Booking</th>
-                            <th className="p-3 text-left">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan={6} className="p-6 text-center">Loading...</td></tr>
-                        ) : transactions.length === 0 ? (
-                            <tr><td colSpan={6} className="p-6 text-center">No transactions found.</td></tr>
-                        ) : transactions.map(tx => (
-                            <tr key={tx.id} className="border-t">
-                                <td className="p-3">{format(new Date(tx.date), 'PPpp')}</td>
-                                <td className="p-3">{tx.type}</td>
-                                <td className="p-3 text-right">{Number(tx.amount).toLocaleString()}</td>
-                                <td className="p-3 text-right">{Number(tx.balanceAfter).toLocaleString()}</td>
-                                <td className="p-3">{tx.bookingId ? <a href={`/bookings/${tx.bookingId}`} className="text-primary underline">#{tx.bookingId}</a> : '-'}</td>
-                                <td className="p-3">{tx.description || '-'}</td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[600px]">
+                        <thead className="bg-muted/50">
+                            <tr>
+                                <th className="p-3 text-left text-foreground">Date</th>
+                                <th className="p-3 text-left text-foreground">Type</th>
+                                <th className="p-3 text-right text-foreground">Amount (ETB)</th>
+                                <th className="p-3 text-right text-foreground">Balance After</th>
+                                <th className="p-3 text-left text-foreground">Booking</th>
+                                <th className="p-3 text-left text-foreground">Description</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Loading...</td></tr>
+                            ) : transactions.length === 0 ? (
+                                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No transactions found.</td></tr>
+                            ) : transactions.map(tx => (
+                                <tr key={tx.id} className="border-t border-border">
+                                    <td className="p-3 text-foreground">{format(new Date(tx.date), 'PPpp')}</td>
+                                    <td className="p-3 text-foreground">{tx.type}</td>
+                                    <td className="p-3 text-right text-foreground">{Number(tx.amount).toLocaleString()}</td>
+                                    <td className="p-3 text-right text-foreground">{Number(tx.balanceAfter).toLocaleString()}</td>
+                                    <td className="p-3">{tx.bookingId ? <a href={`/bookings/${tx.bookingId}`} className="text-primary underline">#{tx.bookingId}</a> : '-'}</td>
+                                    <td className="p-3 text-foreground">{tx.description || '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

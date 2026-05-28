@@ -246,12 +246,13 @@ const EmployeeDashboard = () => {
         }
 
         try {
-            toast.loading(selectedRequest.isDelivery ? "Assigning driver..." : "Starting trip...", { id: 'assign-task' });
-            
-            if (selectedRequest.isDelivery) {
+            toast.loading("Processing...", { id: 'assign-task' });
+
+            // Assign driver whenever one is selected (delivery OR optional assignment)
+            if (selectedDriverId) {
                 await api.patch(`/bookings/${selectedRequest.id}/assign-driver`, {
                     driverId: parseInt(selectedDriverId),
-                    deliveryLocation
+                    deliveryLocation: deliveryLocation || 'Office Pickup'
                 });
             }
 
@@ -263,10 +264,15 @@ const EmployeeDashboard = () => {
             setAssignCarModalOpen(false);
             setSelectedDriverId('');
             setDeliveryLocation('');
-            toast.success(selectedRequest.isDelivery ? "Driver assigned & Trip started" : t('employee.tripStarted'), { id: 'assign-task' });
+            toast.success(
+                selectedDriverId
+                    ? "Driver assigned & trip started"
+                    : t('employee.tripStarted'),
+                { id: 'assign-task' }
+            );
         } catch (error) {
             console.error('Failed to assign driver/start trip:', error);
-            toast.error(error.response?.data?.message || "Failed to process request", { id: 'assign-task' });
+            toast.error(error.message || "Failed to process request", { id: 'assign-task' });
         }
     };
 

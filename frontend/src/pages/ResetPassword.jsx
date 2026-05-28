@@ -62,14 +62,14 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-[85vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-background">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-primary mb-2">Reset Password</h1>
-          <p className="text-gray-600">Enter the code from your email and choose a new password.</p>
+          <p className="text-muted-foreground">Enter the code from your email and choose a new password.</p>
         </div>
 
-        <div className="bg-white py-10 px-6 shadow-xl rounded-2xl border border-gray-100 sm:px-10 relative">
+        <div className="bg-card py-10 px-6 shadow-xl rounded-2xl border border-border sm:px-10 relative">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
               <p className="text-sm font-medium text-red-700">{error}</p>
@@ -78,7 +78,7 @@ const ResetPassword = () => {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="email" className="block text-sm font-semibold text-muted-foreground">
                 Email Address
               </label>
               <div className="mt-2">
@@ -89,7 +89,7 @@ const ResetPassword = () => {
                   autoComplete="email"
                   required
                   placeholder="Enter your email"
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-gray-900"
+                  className="appearance-none block w-full px-4 py-3 border border-border rounded-lg shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-foreground bg-muted/20"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -97,7 +97,7 @@ const ResetPassword = () => {
             </div>
 
             <div>
-              <label htmlFor="code" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="code" className="block text-sm font-semibold text-muted-foreground">
                 Reset Code
               </label>
               <div className="mt-2">
@@ -107,7 +107,7 @@ const ResetPassword = () => {
                   type="text"
                   required
                   placeholder="Enter the code from your email"
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-gray-900"
+                  className="appearance-none block w-full px-4 py-3 border border-border rounded-lg shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-foreground bg-muted/20"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 />
@@ -115,7 +115,7 @@ const ResetPassword = () => {
             </div>
 
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="newPassword" className="block text-sm font-semibold text-muted-foreground">
                 New Password
               </label>
               <div className="mt-2">
@@ -125,7 +125,7 @@ const ResetPassword = () => {
                   type="password"
                   required
                   placeholder="Enter new password"
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-gray-900"
+                  className="appearance-none block w-full px-4 py-3 border border-border rounded-lg shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-foreground bg-muted/20"
                   value={formData.newPassword}
                   onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                 />
@@ -133,7 +133,7 @@ const ResetPassword = () => {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-muted-foreground">
                 Confirm Password
               </label>
               <div className="mt-2">
@@ -143,7 +143,7 @@ const ResetPassword = () => {
                   type="password"
                   required
                   placeholder="Confirm new password"
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-gray-900"
+                  className="appearance-none block w-full px-4 py-3 border border-border rounded-lg shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-foreground bg-muted/20"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 />
@@ -157,7 +157,7 @@ const ResetPassword = () => {
             </div>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-6 text-center text-sm text-muted-foreground">
             <Link to="/login" className="font-medium text-primary hover:text-primary/80">
               Back to login
             </Link>

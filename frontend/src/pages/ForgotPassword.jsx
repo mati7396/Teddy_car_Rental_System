@@ -38,14 +38,14 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-[85vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-background">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-primary mb-2">Forgot Password</h1>
-          <p className="text-gray-600">Enter your email and we will send you a reset code.</p>
+          <p className="text-muted-foreground">Enter your email and we will send you a reset code.</p>
         </div>
 
-        <div className="bg-white py-10 px-6 shadow-xl rounded-2xl border border-gray-100 sm:px-10 relative">
+        <div className="bg-card py-10 px-6 shadow-xl rounded-2xl border border-border sm:px-10 relative">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
               <p className="text-sm font-medium text-red-700">{error}</p>
@@ -66,7 +66,7 @@ const ForgotPassword = () => {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="email" className="block text-sm font-semibold text-muted-foreground">
                 Email Address
               </label>
               <div className="mt-2">
@@ -77,7 +77,7 @@ const ForgotPassword = () => {
                   autoComplete="email"
                   required
                   placeholder="Enter your email"
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-gray-900"
+                  className="appearance-none block w-full px-4 py-3 border border-border rounded-lg shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm transition-all text-foreground bg-muted/20"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -91,7 +91,7 @@ const ForgotPassword = () => {
             </div>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-6 text-center text-sm text-muted-foreground">
             <Link to="/login" className="font-medium text-primary hover:text-primary/80">
               Back to login
             </Link>

@@ -83,6 +83,7 @@ const parseLocation = (locationStr, fallbackOffset = 0) => {
 };
 
 // Generate curved routes from start to end
+// The "shortcut" route (index 1) uses stagger -1.8, 1.8 — MUST match gps-simulator.js exactly
 const generateRoutes = (start, end) => {
     if (!start || !end) return [];
     const [lat1, lng1] = start;
@@ -97,11 +98,37 @@ const generateRoutes = (start, end) => {
             lat1 + (lat2 - lat1) * 0.7 - staggerLat * 0.002,
             lng1 + (lng2 - lng1) * 0.65 + staggerLng * 0.002
         ];
-        return {
-            label,
-            type,
-            path: [start, mid1, mid2, end]
-        };
+
+        // Generate 60-point interpolated path matching the simulator exactly
+        const controlPoints = [start, mid1, mid2, end];
+        const segments = 60;
+        const path = [];
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            let pt;
+            if (t < 0.33) {
+                const localT = t / 0.33;
+                pt = [
+                    lat1 + (mid1[0] - lat1) * localT,
+                    lng1 + (mid1[1] - lng1) * localT
+                ];
+            } else if (t < 0.66) {
+                const localT = (t - 0.33) / 0.33;
+                pt = [
+                    mid1[0] + (mid2[0] - mid1[0]) * localT,
+                    mid1[1] + (mid2[1] - mid1[1]) * localT
+                ];
+            } else {
+                const localT = (t - 0.66) / 0.34;
+                pt = [
+                    mid2[0] + (end[0] - mid2[0]) * localT,
+                    mid2[1] + (end[1] - mid2[1]) * localT
+                ];
+            }
+            path.push(pt);
+        }
+
+        return { label, type, path };
     };
 
     return [
@@ -222,7 +249,7 @@ const DeliveryDetails = () => {
         try {
             setUpdateLoading(true);
             await api.put(`/drivers/deliveries/${id}/status`, { status: newStatus });
-            toast.success(t('driver.statusUpdated') || `Delivery marked as ${newStatus.replace(/_/g, ' ')}`);
+            toast.success(`Delivery marked as ${newStatus.replace(/_/g, ' ')}`);
             if (newStatus === 'DELIVERED') {
                 navigate('/driver/history');
             } else {
@@ -231,7 +258,7 @@ const DeliveryDetails = () => {
             setShowVerificationModal(false);
         } catch (error) {
             console.error('Failed to update status:', error);
-            toast.error(error.response?.data?.message || "Update failed");
+            toast.error(error.message || "Update failed");
         } finally {
             setUpdateLoading(false);
         }

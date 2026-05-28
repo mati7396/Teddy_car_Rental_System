@@ -8,7 +8,6 @@ Fetching a single booking by ID
 Updating bookings (including payment info)*/
 const prisma = require('../utils/prismaClient');
 
-const CHAPA_BASE_URL = 'https://api.chapa.co/v1/transaction';
 const FULL_REFUND_WINDOW_HOURS = 24;
 const LATE_CANCELLATION_FEE_RATE = 0.15;
 const DEFAULT_OPENING_BALANCE = Number(process.env.LOCAL_BANK_OPENING_BALANCE || 20000);
@@ -299,7 +298,7 @@ const updateBookingStatus = async (req, res) => {
                             }
                         });
                     } else {
-                        // Other payment methods (CHAPA, TELEBIRR, etc.) -> credit system account
+                        // External payment method — credit system account
                         const updatedSystem = await tx.bankAccount.update({
                             where: { id: systemAccount.id },
                             data: { balance: { increment: paymentAmount } }
@@ -390,6 +389,25 @@ const updateBookingStatus = async (req, res) => {
                     status: 'PENDING' // or 'IN_PROGRESS'
                 }
             });
+
+            // Reset assigned driver to AVAILABLE when trip is completed
+            try {
+                const delivery = await prisma.delivery.findUnique({
+                    where: { bookingId: booking.id }
+                });
+                if (delivery?.driverId) {
+                    await prisma.driver.update({
+                        where: { id: delivery.driverId },
+                        data: { status: 'AVAILABLE' }
+                    });
+                    await prisma.delivery.update({
+                        where: { bookingId: booking.id },
+                        data: { status: 'DELIVERED' }
+                    });
+                }
+            } catch (driverResetErr) {
+                console.error('Failed to reset driver status on completion:', driverResetErr);
+            }
         }
 
         // Fetch the updated booking to return
@@ -689,69 +707,39 @@ const cancelBooking = async (req, res) => {
 
             let customerBalanceAfter = Number(customerAccount.balance);
 
-            const paymentMethod = (booking.payment && booking.payment.method) ? String(booking.payment.method).toUpperCase() : null;
-
-            // Handle refunds differently based on payment method
+            // Handle refunds
             if (effectiveRefundAmount > 0) {
-                if (paymentMethod === 'CHAPA') {
-                    // Simulate external refund: decrement system account and mark payment REFUNDED
-                    const updatedSystem = await tx.bankAccount.update({
-                        where: { id: systemAccount.id },
-                        data: { balance: { decrement: effectiveRefundAmount } }
-                    });
+                // Return money to customer's internal wallet (local bank)
+                const refundedAccount = await tx.bankAccount.update({
+                    where: { id: customerAccount.id },
+                    data: { balance: { increment: effectiveRefundAmount } }
+                });
 
-                    await tx.bankTransaction.create({
-                        data: {
-                            accountId: updatedSystem.id,
-                            userId,
-                            bookingId,
-                            type: 'REFUND',
-                            status: 'SUCCESS',
-                            amount: effectiveRefundAmount,
-                            balanceAfter: updatedSystem.balance,
-                            description: `Simulated CHAPA refund for cancelled booking #${bookingId}`,
-                            counterparty: booking.user?.email || 'CHAPA'
-                        }
-                    });
+                customerBalanceAfter = Number(refundedAccount.balance);
 
-                    await tx.payment.updateMany({
-                        where: { bookingId },
-                        data: { status: 'REFUNDED' }
-                    });
-                } else {
-                    // Return money to customer's internal wallet (local bank)
-                    const refundedAccount = await tx.bankAccount.update({
-                        where: { id: customerAccount.id },
-                        data: { balance: { increment: effectiveRefundAmount } }
-                    });
+                await tx.bankAccount.update({
+                    where: { id: systemAccount.id },
+                    data: { balance: { decrement: effectiveRefundAmount } }
+                });
 
-                    customerBalanceAfter = Number(refundedAccount.balance);
+                await tx.bankTransaction.create({
+                    data: {
+                        accountId: customerAccount.id,
+                        userId,
+                        bookingId,
+                        type: 'REFUND',
+                        status: 'SUCCESS',
+                        amount: effectiveRefundAmount,
+                        balanceAfter: customerBalanceAfter,
+                        description: `Refund for cancelled booking #${bookingId}`,
+                        counterparty: systemAccount.accountNumber
+                    }
+                });
 
-                    // Also decrement the system account so the overall system balance reflects the refund
-                    await tx.bankAccount.update({
-                        where: { id: systemAccount.id },
-                        data: { balance: { decrement: effectiveRefundAmount } }
-                    });
-
-                    await tx.bankTransaction.create({
-                        data: {
-                            accountId: customerAccount.id,
-                            userId,
-                            bookingId,
-                            type: 'REFUND',
-                            status: 'SUCCESS',
-                            amount: effectiveRefundAmount,
-                            balanceAfter: customerBalanceAfter,
-                            description: `Refund for cancelled booking #${bookingId}`,
-                            counterparty: systemAccount.accountNumber
-                        }
-                    });
-
-                    await tx.payment.updateMany({
-                        where: { bookingId },
-                        data: { status: 'REFUNDED' }
-                    });
-                }
+                await tx.payment.updateMany({
+                    where: { bookingId },
+                    data: { status: 'REFUNDED' }
+                });
             }
 
             if (effectiveCancellationFee > 0) {
@@ -796,6 +784,25 @@ const cancelBooking = async (req, res) => {
                 }
             });
         });
+
+        // Reset driver status to AVAILABLE if one was assigned to this booking
+        try {
+            const delivery = await prisma.delivery.findUnique({
+                where: { bookingId: bookingId }
+            });
+            if (delivery?.driverId) {
+                await prisma.driver.update({
+                    where: { id: delivery.driverId },
+                    data: { status: 'AVAILABLE' }
+                });
+                await prisma.delivery.update({
+                    where: { bookingId: bookingId },
+                    data: { status: 'CANCELLED' }
+                });
+            }
+        } catch (driverResetErr) {
+            console.error('Failed to reset driver status on cancellation:', driverResetErr);
+        }
 
         return res.json({
             message: qualifiesForFullRefund
@@ -915,266 +922,6 @@ const deleteMyBooking = async (req, res) => {
     }
 };
 
-const initializeChapaPayment = async (req, res) => {
-    try {
-        const { bookingId } = req.body;
-        const userId = req.user.id;
-
-        if (!bookingId) {
-            return res.status(400).json({ message: 'bookingId is required' });
-        }
-
-        if (!process.env.CHAPA_SECRET_KEY) {
-            console.error('CHAPA_SECRET_KEY is missing from environment variables');
-            return res.status(500).json({ message: 'Payment gateway is not configured' });
-        }
-
-        const booking = await prisma.booking.findUnique({
-            where: { id: parseInt(bookingId) },
-            include: {
-                user: { include: { customerProfile: true } },
-                payment: true
-            }
-        });
-
-        if (!booking) {
-            return res.status(404).json({ message: 'Booking not found' });
-        }
-
-        if (booking.userId !== userId) {
-            return res.status(403).json({ message: 'Not authorized to pay for this booking' });
-        }
-
-        const txRef = `TEDDY-${booking.id}-${Date.now()}`;
-        const firstName = booking.user?.customerProfile?.firstName || 'Teddy';
-        const lastName = booking.user?.customerProfile?.lastName || 'Customer';
-        const email = booking.user?.email;
-        const amount = Number(booking.totalAmount);
-
-        if (!email) {
-            return res.status(400).json({ message: 'Customer email is required to initialize payment' });
-        }
-
-        const callbackUrl = `${getFrontendBaseUrl()}/confirmation?bookingId=${booking.id}&tx_ref=${encodeURIComponent(txRef)}&source=chapa-callback`;
-        const returnUrl = `${getFrontendBaseUrl()}/confirmation?bookingId=${booking.id}&tx_ref=${encodeURIComponent(txRef)}&source=chapa-return`;
-
-        const chapaResponse = await fetch(`${CHAPA_BASE_URL}/initialize`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                amount: amount.toFixed(2),
-                currency: 'ETB',
-                email,
-                first_name: firstName,
-                last_name: lastName,
-                tx_ref: txRef,
-                callback_url: callbackUrl,
-                return_url: returnUrl
-            })
-        });
-
-        const chapaData = await chapaResponse.json();
-        if (!chapaResponse.ok || chapaData?.status !== 'success' || !chapaData?.data?.checkout_url) {
-            console.error('Chapa initialization failed:', chapaData);
-            return res.status(502).json({ message: chapaData?.message || 'Unable to initialize payment with Chapa' });
-        }
-
-        await prisma.payment.upsert({
-            where: { bookingId: booking.id },
-            update: {
-                method: 'CHAPA',
-                amount,
-                transactionId: txRef,
-                payerIdentifier: email,
-                status: 'PENDING'
-            },
-            create: {
-                bookingId: booking.id,
-                method: 'CHAPA',
-                amount,
-                transactionId: txRef,
-                payerIdentifier: email,
-                status: 'PENDING'
-            }
-        });
-
-        return res.json({
-            checkoutUrl: chapaData.data.checkout_url,
-            txRef
-        });
-    } catch (error) {
-        console.error('Initialize Chapa payment error:', error);
-        return res.status(500).json({ message: 'Unable to initialize payment' });
-    }
-};
-
-const verifyChapaPayment = async (req, res) => {
-    try {
-        const { tx_ref: txRef, bookingId } = req.query;
-        const userId = req.user.id;
-
-        if (!txRef || !bookingId) {
-            return res.status(400).json({ message: 'tx_ref and bookingId are required' });
-        }
-
-        const booking = await prisma.booking.findUnique({
-            where: { id: parseInt(bookingId) },
-            include: { payment: true }
-        });
-
-        if (!booking) {
-            return res.status(404).json({ message: 'Booking not found' });
-        }
-
-        if (booking.userId !== userId) {
-            return res.status(403).json({ message: 'Not authorized to verify this payment' });
-        }
-
-        if (booking.status === 'PAID') {
-            return res.json({
-                message: 'Booking is already paid',
-                paymentStatus: 'PAID',
-                booking
-            });
-        }
-
-        if (!process.env.CHAPA_SECRET_KEY) {
-            return res.status(500).json({ message: 'Payment gateway is not configured' });
-        }
-
-        const chapaResponse = await fetch(`${CHAPA_BASE_URL}/verify/${encodeURIComponent(txRef)}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY}`
-            }
-        });
-
-        const chapaData = await chapaResponse.json();
-        if (!chapaResponse.ok || chapaData?.status !== 'success') {
-            console.error('Chapa verification failed:', chapaData);
-            await prisma.payment.upsert({
-                where: { bookingId: booking.id },
-                update: { status: 'FAILED', transactionId: txRef },
-                create: {
-                    bookingId: booking.id,
-                    amount: Number(booking.totalAmount),
-                    method: 'CHAPA',
-                    transactionId: txRef,
-                    status: 'FAILED'
-                }
-            });
-            return res.status(400).json({
-                message: chapaData?.message || 'Payment verification failed',
-                paymentStatus: 'FAILED'
-            });
-        }
-
-        const chapaPaymentStatus = chapaData?.data?.status;
-        const isPaid = ['success', 'successful'].includes(String(chapaPaymentStatus || '').toLowerCase());
-
-        if (isPaid) {
-            // For external (CHAPA) payments we DO NOT debit the customer's internal wallet.
-            // Instead, credit the system account (revenue) and mark payment as PAID.
-            const updatedBooking = await prisma.$transaction(async (tx) => {
-                const systemAccount = await ensureSystemAccount(tx);
-                const paymentAmount = Number(booking.totalAmount || 0);
-
-                // Credit system account to reflect incoming external payment
-                const updatedSystem = await tx.bankAccount.update({
-                    where: { id: systemAccount.id },
-                    data: { balance: { increment: paymentAmount } }
-                });
-
-                // Record a bank transaction for accounting (system received payment)
-                await tx.bankTransaction.create({
-                    data: {
-                        accountId: updatedSystem.id,
-                        userId: booking.userId,
-                        bookingId: booking.id,
-                        type: 'PAYMENT',
-                        status: 'SUCCESS',
-                        amount: paymentAmount,
-                        balanceAfter: updatedSystem.balance,
-                        description: `External CHAPA payment for booking #${booking.id}`,
-                        counterparty: booking.user?.email || 'CHAPA'
-                    }
-                });
-
-                const paidBooking = await tx.booking.update({
-                    where: { id: booking.id },
-                    data: { status: 'PAID' },
-                    include: {
-                        car: true,
-                        package: true,
-                        payment: true,
-                        user: { include: { customerProfile: true } }
-                    }
-                });
-
-                await tx.payment.upsert({
-                    where: { bookingId: booking.id },
-                    update: {
-                        status: 'PAID',
-                        method: 'CHAPA',
-                        transactionId: txRef,
-                        payerIdentifier: paidBooking.user.email
-                    },
-                    create: {
-                        bookingId: booking.id,
-                        amount: Number(booking.totalAmount),
-                        method: 'CHAPA',
-                        transactionId: txRef,
-                        payerIdentifier: paidBooking.user.email,
-                        status: 'PAID'
-                    }
-                });
-
-                // Notify staff and user
-                await tx.notification.createMany({
-                    data: [
-                        { recipientRole: 'EMPLOYEE', message: `Payment received via CHAPA: ${paymentAmount} ETB` },
-                        { recipientRole: 'ADMIN', message: `Payment received via CHAPA: ${paymentAmount} ETB` },
-                        { userId: booking.userId, message: 'Payment Successful' }
-                    ]
-                });
-
-                return paidBooking;
-            });
-
-            return res.json({
-                message: 'Payment verified successfully',
-                paymentStatus: 'PAID',
-                booking: updatedBooking
-            });
-        }
-
-        await prisma.payment.upsert({
-            where: { bookingId: booking.id },
-            update: { status: 'FAILED', transactionId: txRef, method: 'CHAPA' },
-            create: {
-                bookingId: booking.id,
-                amount: Number(booking.totalAmount),
-                method: 'CHAPA',
-                transactionId: txRef,
-                status: 'FAILED'
-            }
-        });
-
-        return res.status(400).json({
-            message: chapaData?.message || 'Payment was not successful',
-            paymentStatus: 'FAILED'
-        });
-    } catch (error) {
-        console.error('Verify Chapa payment error:', error);
-        const message = error.message || 'Unable to verify payment';
-        const statusCode = /insufficient balance/i.test(message) ? 400 : 500;
-        return res.status(statusCode).json({ message, paymentStatus: 'FAILED' });
-    }
-};
-
 module.exports = {
     createBooking,
     getMyBookings,
@@ -1186,7 +933,5 @@ module.exports = {
     updateBooking,
     getCancellationPreview,
     cancelBooking,
-    deleteMyBooking,
-    initializeChapaPayment,
-    verifyChapaPayment
+    deleteMyBooking
 };

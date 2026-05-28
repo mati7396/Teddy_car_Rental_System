@@ -4,7 +4,7 @@ import { api } from '@/api';
 import { useAuth } from '@/context/AuthContext';
 import logo from '../assets/logo.png';
 import {
-    LayoutDashboard, Car, Users, Package, DollarSign, ClipboardList, Menu, Bell, LogOut, Search, User, FileText, Navigation
+    LayoutDashboard, Car, Users, Package, DollarSign, ClipboardList, Menu, Bell, LogOut, Search, User, FileText, Navigation, MessageSquare
 } from 'lucide-react';
 
 // Shadcn Components
@@ -103,6 +103,7 @@ const EmployeeLayout = ({ children }) => {
         { path: '/employee/packages', icon: Package, label: 'Packages' },
         { path: '/employee/customers', icon: Users, label: 'Customers' },
         { path: '/employee/reports', icon: ClipboardList, label: 'Reports' },
+        { path: '/admin/messages', icon: MessageSquare, label: 'Messages' },
     ];
 
     return (
@@ -204,6 +205,7 @@ const EmployeeLayout = ({ children }) => {
                                                 if (notif.category === 'Maintenance') navigate('/employee/cars');
                                                 else if (notif.category === 'Booking') navigate('/employee/reports');
                                                 else if (notif.category === 'Payment' || notif.category === 'Refund') await openPaymentFromNotification(notif);
+                                                else if (notif.category === 'Contact') navigate('/admin/messages');
                                                 else navigate('/employee/reports');
                                             }}
                                         >
